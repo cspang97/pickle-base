@@ -341,7 +341,7 @@
         '<p class="small muted">' + esc(p.summary || '') + '</p>' +
         '<div class="meter"><i style="width:' + pct + '%"></i></div>' +
         '<div class="meter__label"><span>' + (p.chars || 0) + '자 / ' + limit2 + '자 기준 (' + pct + '%)</span><span>여유 ' + Math.max(0, limit2 - (p.chars || 0)) + '자</span></div>' +
-        (body ? '<div class="dsection"><div class="dbody" style="max-height:200px;margin-top:14px">' + esc(body) + '</div></div>' : '') +
+        (body ? '<div class="dsection"><div class="pre" style="margin-top:14px">' + esc(body) + '</div></div>' : '') +
         '<div class="row row--gap" style="margin-top:14px">' +
         (p.publishedUrl ? '<a class="btn btn--primary btn--sm" href="' + esc(p.publishedUrl) + '" target="_blank" rel="noopener">발행 글 보기</a>' : '') +
         (p.url ? '<a class="btn btn--ghost btn--sm" href="' + esc(p.url) + '" target="_blank" rel="noopener">원고 열기</a>' : '') +
@@ -450,7 +450,7 @@
 
     var out = pageHead('05_일상생활', '오늘의 습관 체크',
       '“습관 체크” 한마디면 등록된 8개 항목을 하나씩 확인합니다. 여기서는 직접 체크하고 주간 흐름을 봅니다. 체크는 이 브라우저에 저장됩니다.',
-      '<span>' + esc(weekLabel(new Date())) + '</span><span>' + done + ' / ' + list.length + ' 완료</span>');
+      '<span>' + esc(weekLabel(new Date())) + '</span><span id="dailyDone">' + done + ' / ' + list.length + ' 완료</span>');
 
     if (fallback) {
       out += '<p class="notice">드라이브에서 습관 목록을 찾지 못해 기본 8개 항목을 표시합니다.</p>';
@@ -665,6 +665,8 @@
           line.querySelector('.meter i').style.width = pct + '%';
           line.querySelector('.small').textContent = pct + '%';
         }
+        var heroDone = $('#dailyDone');
+        if (heroDone) heroDone.textContent = done + ' / ' + list.length + ' 완료';
       });
     });
   }
