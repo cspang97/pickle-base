@@ -229,7 +229,7 @@ window.PB_PREVIEW = (function () {
       status: 'complete', statusText: '완료', skill: '애플리케이션 제작·배포',
       output: 'https://cspang97.github.io/pickle-base/ (v2)',
       note: '폴더·파일이 아니라 이 문서의 태스크로 전체·완료·진행중·미정을 집계하도록 개편',
-      next: '배포 후 실제 집계 확인하기'
+      next: '다음 버전 범위 정하기'
     }
   ];
 
