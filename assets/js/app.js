@@ -316,7 +316,7 @@
       statTile('미정', tc.pending, '건', '정하면 시작되는 태스크') +
       '</div>';
 
-    out += '<section class="card"><div class="card__head"><div><h2>태스크 현황</h2><p>' + visibleTasks().length + '건 · ' + +
+    out += '<section class="card"><div class="card__head"><div><h2>태스크 현황</h2><p>' + visibleTasks().length + '건 · ' +
       (state.filter === 'all' ? '전체' : (STATUS[state.filter] || {}).label || '') + '</p></div>' +
       '<span class="small muted">' + esc(taskSourceLabel()) + '</span></div>' +
       taskCategoryStrip() + taskTable(visibleTasks()) + '</section>';
