@@ -186,6 +186,66 @@ window.PB_PREVIEW = (function () {
     }
   ];
 
+  /* 태스크 기준표 — 실제 '업무자동화 목록' 문서의 태스크 블록과 같은 내용.
+     상단 전체·완료·진행중·미정 집계는 이 목록만 셉니다(폴더·파일 제외). */
+  var tasks = [
+    {
+      no: 1, title: '네이버 블로그 첫 글 《새로운 시작》 발행', category: '네이버블로그',
+      status: 'complete', statusText: '완료', skill: '네이버 블로그 글 발행',
+      output: '02_네이버블로그/원고/새로운 시작',
+      note: '2026-11-19 발행 · 320자 · 전체공개 · https://blog.naver.com/cspang97/224483535431',
+      next: '발행 주기와 주제 범위 정하기'
+    },
+    {
+      no: 2, title: 'Pickle_Base 워크스페이스 웹앱 v1 제작·배포', category: '애플리케이션',
+      status: 'complete', statusText: '완료', skill: '애플리케이션 제작·배포',
+      output: 'https://cspang97.github.io/pickle-base/ (코드 04_애플리케이션/코드 · 저장소 github.com/cspang97/pickle-base)',
+      note: '2026-11-20 GitHub Pages 배포 · 드라이브 읽기 전용 연동',
+      next: 'v1 사용 점검 후 다음 버전 범위 정하기'
+    },
+    {
+      no: 3, title: 'SNS 유니버스 설계 및 후속 블로그 운영', category: '네이버블로그',
+      status: 'progress', statusText: '진행중', skill: '네이버 블로그 글 발행',
+      output: '01_업무자동화목록/기획메모/SNS 유니버스 구상',
+      note: '채널 범위(네이버·인스타·유튜브·X)와 자동화 범위 정리 중',
+      next: '채널 우선순위와 첫 설계 초안 정하기'
+    },
+    {
+      no: 4, title: '일상·건강 습관 체크 자동화', category: '일상생활',
+      status: 'progress', statusText: '진행중', skill: '습관 체크',
+      output: '05_일상생활 (날짜별 기록)',
+      note: '건강·식단 습관 8건을 구글 할 일 체크리스트로 운영 중',
+      next: '정기 확인 시각과 기록 형식 정하기'
+    },
+    {
+      no: 5, title: '리서치 요약 자동화', category: '리서치',
+      status: 'pending', statusText: '미정', skill: '리서치 요약',
+      output: '03_리서치/자료 · 요약노트 · 출처',
+      note: '스킬 정의만 있고 실행 기록은 없음',
+      next: '첫 리서치 주제와 주기 정하기'
+    },
+    {
+      no: 6, title: '웹앱 태스크 기준 집계 개편', category: '애플리케이션',
+      status: 'complete', statusText: '완료', skill: '애플리케이션 제작·배포',
+      output: 'https://cspang97.github.io/pickle-base/ (v2)',
+      note: '폴더·파일이 아니라 이 문서의 태스크로 전체·완료·진행중·미정을 집계하도록 개편',
+      next: '배포 후 실제 집계 확인하기'
+    }
+  ];
+
+  var taskStats = { all: tasks.length, complete: 0, progress: 0, pending: 0, categories: [] };
+  var categoryMap = {};
+  tasks.forEach(function (t) {
+    taskStats[t.status]++;
+    var name = t.category || '미분류';
+    if (!categoryMap[name]) {
+      categoryMap[name] = { name: name, all: 0, complete: 0, progress: 0, pending: 0 };
+      taskStats.categories.push(categoryMap[name]);
+    }
+    categoryMap[name].all++;
+    categoryMap[name][t.status]++;
+  });
+
   var timeline = [
     { date: '2026-11-20', title: 'Pickle_Base 워크스페이스 v1 배포', desc: '허브 대시보드·영역 탭·통합 검색·드라이브 읽기 연동을 GitHub Pages에 올림.' },
     { date: '2026-11-20', title: '폴더 구조 재정렬 — 허브를 01로', desc: '01_업무자동화목록을 맨 위로, 스킬 4종 문서와 구조 지도·목록 문서 번호 정리.' },
@@ -220,10 +280,19 @@ window.PB_PREVIEW = (function () {
     areas: areas,
     items: items,
     skills: skills,
+    tasks: tasks,
+    taskStats: taskStats,
+    taskSource: 'doc',
+    taskDoc: {
+      id: '15LMQutQ9JL0XBFnhSQ81zM7bspdzvvtragD_tRbCc6U',
+      title: '업무자동화 목록',
+      path: '01_업무자동화목록/업무자동화 목록',
+      url: DOC + '15LMQutQ9JL0XBFnhSQ81zM7bspdzvvtragD_tRbCc6U/edit'
+    },
     timeline: timeline,
     pending: pending,
     habits: habits,
-    stats: { automation: 4, skillsRun: 1, skillsTotal: 4, posts: 1, published: 1, drafts: 0, maxChars: 320, charLimit: 500, pending: 5 },
+    stats: { automation: 6, skillsRun: 1, skillsTotal: 4, posts: 1, published: 1, drafts: 0, maxChars: 320, charLimit: 500, pending: 5, taskAll: taskStats.all, taskComplete: taskStats.complete, taskProgress: taskStats.progress, taskPending: taskStats.pending },
     blog: { limit: 500 }
   };
 })();

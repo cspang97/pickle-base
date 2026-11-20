@@ -115,6 +115,42 @@
   function visible(list) { return list.filter(matching); }
   function countBy(key) { return state.model.items.filter(function (i) { return i.status === key && matchesQuery(i); }).length; }
 
+  /* ---------- 태스크 (01_업무자동화목록/업무자동화 목록) ----------
+     전체·완료·진행중·미정 집계는 폴더·파일이 아니라 이 태스크 목록만 셉니다. */
+  function taskList() { return (state.model && state.model.tasks) || []; }
+  function taskMatchesQuery(t) {
+    var q = state.query.trim().toLowerCase();
+    if (!q) return true;
+    var hay = [t.title, t.category, t.statusText, t.skill, t.output, t.note, t.next].join(' ').toLowerCase();
+    return q.split(/\s+/).every(function (w) { return hay.indexOf(w) >= 0; });
+  }
+  function matchingTask(t) {
+    if (state.filter !== 'all' && t.status !== state.filter) return false;
+    return taskMatchesQuery(t);
+  }
+  function visibleTasks() { return taskList().filter(matchingTask); }
+  function taskCount(key) {
+    return taskList().filter(function (t) {
+      return (key === 'all' || t.status === key) && taskMatchesQuery(t);
+    }).length;
+  }
+  function taskCounts() {
+    var c = { all: 0, complete: 0, progress: 0, pending: 0 };
+    taskList().forEach(function (t) { c.all++; if (c[t.status] !== undefined) c[t.status]++; });
+    return c;
+  }
+  function taskCategories() {
+    var out = [];
+    var map = {};
+    taskList().forEach(function (t) {
+      var name = t.category || '미분류';
+      if (!map[name]) { map[name] = { name: name, all: 0, complete: 0, progress: 0, pending: 0 }; out.push(map[name]); }
+      map[name].all++;
+      if (map[name][t.status] !== undefined) map[name][t.status]++;
+    });
+    return out;
+  }
+
   /* ================= chrome ================= */
   function renderTabs() {
     var nav = $('#tabs');
@@ -139,9 +175,9 @@
   function renderStatusChips() {
     var box = $('#statusChips');
     var defs = [{ k: 'all', label: '전체' }, { k: 'complete', label: '완료' }, { k: 'progress', label: '진행중' }, { k: 'pending', label: '미정' }];
-    box.innerHTML = defs.map(function (d) {
-      var n = d.k === 'all' ? state.model.items.filter(matchesQuery).length : countBy(d.k);
-      return '<button class="chip" data-filter="' + d.k + '" aria-pressed="' + (state.filter === d.k) + '">' +
+    box.innerHTML = '<span class="chips__label" title="01_업무자동화목록/업무자동화 목록의 태스크 기준">태스크</span>' + defs.map(function (d) {
+      var n = taskCount(d.k);
+      return '<button class="chip" data-filter="' + d.k + '" aria-pressed="' + (state.filter === d.k) + '" title="태스크 기준 집계">' +
         d.label + '<span class="chip__count">' + n + '</span></button>';
     }).join('');
   }
@@ -228,24 +264,64 @@
       '</article>';
   }
 
+  function taskTable(list) {
+    if (!list.length) {
+      return emptyInline('조건에 맞는 태스크가 없습니다', '상태 필터를 “전체”로 바꾸거나 검색어를 지워 보세요.');
+    }
+    return '<div class="tablewrap"><table class="table table--tasks"><thead><tr>' +
+      '<th class="taskno">#</th><th>태스크</th><th>분류</th><th>상태</th><th>연결 스킬</th><th>결과물 위치</th><th>다음 할 일</th>' +
+      '</tr></thead><tbody>' +
+      list.map(function (t) {
+        return '<tr>' +
+          '<td class="taskno">' + esc(String(t.no || '')) + '</td>' +
+          '<td><b>' + esc(t.title) + '</b>' + (t.note ? '<div class="path">' + esc(t.note) + '</div>' : '') + '</td>' +
+          '<td>' + esc(t.category || '미분류') + '</td>' +
+          '<td>' + chip(t.status) + '</td>' +
+          '<td class="path">' + esc(t.skill || '—') + '</td>' +
+          '<td class="path">' + esc(t.output || '—') + '</td>' +
+          '<td class="path">' + esc(t.next || '—') + '</td>' +
+          '</tr>';
+      }).join('') + '</tbody></table></div>';
+  }
+
+  function taskCategoryStrip() {
+    var cats = taskCategories();
+    if (!cats.length) return '';
+    return '<div class="taskcats">' + cats.map(function (c) {
+      return '<span class="tag">' + esc(c.name) + ' ' + c.all + ' · 완료 ' + c.complete + '</span>';
+    }).join('') + '</div>';
+  }
+
+  function taskSourceLabel() {
+    return (state.model && state.model.taskSource === 'skills')
+      ? '태스크 기준표를 읽지 못해 스킬 정의로 대신 셉니다'
+      : '01_업무자동화목록/업무자동화 목록의 태스크';
+  }
+
   function viewDashboard() {
     var m = state.model;
     var s = m.stats || {};
+    var tc = taskCounts();
     var sourceNote = state.source === 'drive'
       ? '드라이브 실시간 · ' + fmtDateTime(m.syncedAt)
       : '프리뷰 스냅샷 · 2026-11-20';
     var out = pageHead('허브 대시보드', '지금 Pickle_Base의 상태',
-      '폴더를 열지 않아도 자동화 항목과 스킬의 진행 상태, 최근 작업, 아직 정하지 않은 것이 한 화면에 모입니다.',
-      '<span>데이터 · ' + esc(sourceNote) + '</span><span>폴더 · 01~06' + (m.folderId ? ' · ' + esc(String(m.folderId).slice(0, 8)) + '…' : '') + '</span>');
+      '폴더를 열지 않아도 태스크와 스킬의 진행 상태, 최근 작업, 아직 정하지 않은 것이 한 화면에 모입니다. 상태 집계는 폴더·파일이 아니라 <code>업무자동화 목록</code>의 태스크 기준입니다.',
+      '<span>데이터 · ' + esc(sourceNote) + '</span><span>태스크 ' + tc.all + '건 · 완료 ' + tc.complete + '</span>');
 
     out += '<div class="grid grid--stats">' +
-      statTile('자동화 항목', (s.automation || 0), '개', '01_업무자동화목록의 목록') +
-      statTile('실행한 스킬', (s.skillsRun || 0), '/ ' + (s.skillsTotal || 4), '실행 기록이 있는 스킬') +
-      statTile('발행한 원고', (s.published || 0), '편', '500자 기준 · 최장 ' + (s.maxChars || 0) + '자') +
-      statTile('미정 사항', (s.pending || 0), '건', '정해야 다음 단계로') +
+      statTile('전체 태스크', tc.all, '건', '업무자동화 목록 기준 · 폴더 제외') +
+      statTile('완료', tc.complete, '건', '결과물까지 남긴 태스크') +
+      statTile('진행중', tc.progress, '건', '지금 굴러가는 태스크') +
+      statTile('미정', tc.pending, '건', '정하면 시작되는 태스크') +
       '</div>';
 
-    out += '<div class="section-label">스킬 4종</div>';
+    out += '<section class="card"><div class="card__head"><div><h2>태스크 현황</h2><p>' + tc.all + '건 · ' +
+      (state.filter === 'all' ? '전체' : (STATUS[state.filter] || {}).label || '') + '</p></div>' +
+      '<span class="small muted">' + esc(taskSourceLabel()) + '</span></div>' +
+      taskCategoryStrip() + taskTable(visibleTasks()) + '</section>';
+
+    out += '<div class="section-label">스킬 ' + (m.skills || []).length + '종</div>';
     out += '<div class="grid grid--auto">' + (m.skills || []).map(skillCard).join('') + '</div>';
 
     out += '<div class="grid grid--2">';
@@ -254,13 +330,13 @@
         return '<li><time>' + esc(t.date) + '</time><strong>' + esc(t.title) + '</strong><p>' + esc(t.desc) + '</p></li>';
       }).join('') + '</ol></section>';
 
-    out += '<section class="card"><div class="card__head"><div><h2>미정 사항</h2><p>' + (m.pending || []).length + '건 · 정하면 각 스킬의 실행 조건이 채워집니다</p></div></div>' +
+    out += '<section class="card"><div class="card__head"><div><h2>아직 정하지 않은 것</h2><p>스킬 문서 기준 ' + (m.pending || []).length + '건 · 태스크 ‘미정’과는 별개</p></div></div>' +
       ((m.pending || []).length ? '<ul class="pending">' + m.pending.slice(0, 8).map(function (p) {
         return '<li><span class="pending__box" aria-hidden="true"></span><span><b>' + esc(p.title) + '</b><span>' + esc(p.desc) + '</span></span></li>';
       }).join('') + '</ul>' : '<div class="empty"><span class="empty__icon">✓</span><h3>정해야 할 것이 없습니다</h3><p>문서에서 “아직 정하지 않은 것” 항목을 찾지 못했습니다.</p></div>') +
       '</section></div>';
 
-    out += '<section class="card"><div class="card__head"><div><h2>폴더 구조</h2><p>목록과 스킬은 01에, 결과물은 각 업무 폴더에</p></div></div>' +
+    out += '<section class="card"><div class="card__head"><div><h2>폴더 구조</h2><p>탑색용입니다 — 태스크 집계에는 포함되지 않습니다</p></div></div>' +
       '<div class="folders">' + (m.areas || []).map(function (a) {
         return '<button class="folder' + (a.hub ? ' folder--hub' : '') + '" data-tab-jump="' + a.key + '" type="button">' +
           '<em>' + esc(a.no) + '</em><b>' + esc(a.name) + '</b><span>' + esc(a.role) + '</span><span>' + esc(a.count || '') + '</span></button>';
@@ -280,18 +356,16 @@
     var skillItems = hubItems.filter(function (i) { return /스킬/.test(i.path); });
     var memoItems = hubItems.filter(function (i) { return /기획메모/.test(i.path); });
     var otherItems = hubItems.filter(function (i) { return !/스킬|기획메모/.test(i.path); });
+    var tc = taskCounts();
 
     var out = pageHead('01_업무자동화목록', '업무자동화 허브',
-      '자동화 항목과 스킬 정의는 여기에만 두고, 결과물은 각 업무 폴더에 쌓습니다. 스킬은 목적·실행 조건·입력·절차·결과물·규칙 순서로 정의되어 있어 같은 방식으로 반복 실행됩니다.',
-      '<span>자동화 항목 4</span><span>스킬 문서 ' + (state.model.skills || []).length + '개</span>');
+      '태스크는 <code>업무자동화 목록</code>의 태스크 블록이 유일한 기준표입니다. 스킬 정의는 <code>스킬</code> 폴더에, 결과물은 각 업무 폴더에 쌓습니다.',
+      '<span>태스크 ' + tc.all + '건 · 완료 ' + tc.complete + '</span><span>스킬 문서 ' + (state.model.skills || []).length + '개</span>');
 
-    out += '<section class="card"><div class="card__head"><div><h2>자동화 항목</h2><p>상태 · 결과물 위치 · 다음 할 일</p></div></div>' +
-      '<div class="tablewrap"><table class="table"><thead><tr><th>항목</th><th>상태</th><th>결과물</th><th>다음</th></tr></thead><tbody>' +
-      (state.model.skills || []).map(function (s) {
-        return '<tr><td><b>' + esc(s.name) + '</b></td><td>' + chip(s.status) + '</td>' +
-          '<td class="path">' + esc(s.output) + '</td><td class="path">' + esc(s.next) + '</td></tr>';
-      }).join('') +
-      '</tbody></table></div></section>';
+    out += '<section class="card"><div class="card__head"><div><h2>태스크 목록</h2><p>전체 · 완료 · 진행중 · 미정 집계의 기준</p></div>' +
+      (state.model.taskDoc ? '<a class="btn btn--ghost btn--sm" href="' + esc(state.model.taskDoc.url) + '" target="_blank" rel="noopener">목록 문서 열기</a>' : '') +
+      '</div>' +
+      taskCategoryStrip() + taskTable(visibleTasks()) + '</section>';
 
     out += '<section class="card"><div class="card__head"><div><h2>스킬 문서</h2><p>목적·실행 조건·입력·절차·결과물·규칙</p></div></div>' +
       '<div class="stack">' + (skillItems.length ? skillItems.map(function (i) { return itemRow(i); }).join('') : emptyInline('스킬 문서를 찾지 못했습니다')) + '</div></section>';
@@ -502,11 +576,17 @@
 
   function viewSearch() {
     var q = state.query.trim();
+    var taskHits = visibleTasks();
     var hits = state.model.items.filter(matching);
-    var out = '<section class="card hero"><div><p class="eyebrow">통합 검색</p><h1>“' + esc(q) + '” 검색 결과 ' + hits.length + '건</h1>' +
-      '<p class="lede">폴더를 열지 않고 제목·요약·경로·태그로 찾습니다. 상태 필터를 함께 쓸 수 있습니다.</p></div></section>';
-    if (!hits.length) {
+    var total = taskHits.length + hits.length;
+    var out = '<section class="card hero"><div><p class="eyebrow">통합 검색</p><h1>“' + esc(q) + '” 검색 결과 ' + total + '건</h1>' +
+      '<p class="lede">태스크 ' + taskHits.length + '건 · 문서·항목 ' + hits.length + '건. 폴더를 열지 않고 제목·요약·경로·태그로 찾습니다. 상태 필터를 함께 쓸 수 있습니다.</p></div></section>';
+    if (!total) {
       return '<div class="view">' + out + '<section class="card">' + emptyInline('일치하는 항목이 없습니다', '다른 낱말로 찾아보거나 상태 필터를 “전체”로 바꿔 보세요.') + '</section></div>';
+    }
+    if (taskHits.length) {
+      out += '<section class="card"><div class="card__head"><div><h2>태스크</h2><p>' + taskHits.length + '건 · 업무자동화 목록 기준</p></div></div>' +
+        taskTable(taskHits) + '</section>';
     }
     var groups = {};
     hits.forEach(function (i) { (groups[i.area] = groups[i.area] || []).push(i); });

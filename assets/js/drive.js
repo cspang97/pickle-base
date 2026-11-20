@@ -137,8 +137,24 @@ window.PBDrive = (function () {
     var url = API + 'files/' + encodeURIComponent(id) + '/export?mimeType=text/plain';
     return fetch(url, { headers: { Authorization: 'Bearer ' + token } }).then(function (r) {
       if (!r.ok) return null;
-      return r.text();
+      return r.text().then(normalizeExport);
     }).catch(function () { return null; });
+  }
+
+  /* text/plain 내보내기는 BOM·CRLF를 붙이고, 목록 문단을 "* "로 그립니다.
+     두 경우를 모두 벗겨서 본문을 줄 단위로 읽습니다. */
+  function normalizeExport(raw) {
+    var text = String(raw == null ? '' : raw).replace(/^\uFEFF/, '');
+    return text.split(/\r\n|\r|\n/).map(function (line) {
+      var l = line;
+      var guard = 0;
+      while (guard++ < 5) {
+        if (l.indexOf('* ') === 0) { l = l.slice(2); continue; }
+        if (l.indexOf('• ') === 0) { l = l.slice(2); continue; }
+        break;
+      }
+      return l.trim() === '*' ? '' : l;
+    }).join('\n');
   }
 
   function pool(list, limit, fn) {
@@ -225,6 +241,66 @@ window.PBDrive = (function () {
   function extractBlogUrl(text) {
     var m = String(text || '').match(/https?:\/\/blog\.naver\.com\/[^\s)>\]]+/);
     return m ? m[0] : '';
+  }
+
+  /* ---------- 태스크 기준표: 01_업무자동화목록/업무자동화 목록 ----------
+     이 문서의 '태스크:' 블록만 태스크로 셉니다. 폴더·파일은 태스크가 아닙니다.
+     블록 라벨은 이름을 바꾸지 않는 규칙이라, 라벨 단위로 읽습니다. */
+  var TASK_DOC_ID = '15LMQutQ9JL0XBFnhSQ81zM7bspdzvvtragD_tRbCc6U';
+  var TASK_DOC_NAME = '업무자동화 목록';
+  var TASK_LABELS = ['분류', '상태', '연결 스킬', '결과물 위치', '다음 할 일', '비고'];
+
+  function statusKey(value) {
+    var t = String(value || '').replace(/\s+/g, ' ').trim();
+    if (!t) return 'pending';
+    if (/^(완료|완료됨|done)/i.test(t)) return 'complete';
+    if (/^(진행|진행중|진행 중|in progress|doing)/i.test(t)) return 'progress';
+    if (/^(미정|설계 전|설계전|예정|보류|pending|todo)/i.test(t)) return 'pending';
+    return 'pending';
+  }
+
+  function parseTasks(text) {
+    var lines = String(text || '').split('\n');
+    var out = [];
+    var cur = null;
+    for (var i = 0; i < lines.length; i++) {
+      var line = lines[i].replace(/\u00a0/g, ' ').trim();
+      if (!line) continue;
+      var head = line.match(/^태스크\s*[:：]+\s*(.+)$/);
+      if (head) {
+        cur = { no: out.length + 1, title: head[1].trim(), category: '', status: 'pending', statusText: '', skill: '', output: '', note: '', next: '' };
+        out.push(cur);
+        continue;
+      }
+      if (!cur) continue;
+      var label = null;
+      for (var k = 0; k < TASK_LABELS.length; k++) {
+        if (line.indexOf(TASK_LABELS[k] + ':') === 0 || line.indexOf(TASK_LABELS[k] + '：') === 0) { label = TASK_LABELS[k]; break; }
+      }
+      if (!label) continue;
+      var value = line.slice(label.length + 1).trim();
+      if (label === '분류') cur.category = value;
+      else if (label === '상태') { cur.statusText = value; cur.status = statusKey(value); }
+      else if (label === '연결 스킬') cur.skill = value.replace(/^스킬\s*[:：]\s*/, '');
+      else if (label === '결과물 위치') cur.output = value;
+      else if (label === '다음 할 일') cur.next = value;
+      else if (label === '비고') cur.note = value;
+    }
+    return out.filter(function (t) { return t.title && (t.statusText || t.category || t.output); });
+  }
+
+  function statsOfTasks(tasks) {
+    var out = { all: tasks.length, complete: 0, progress: 0, pending: 0, categories: [] };
+    var byName = {};
+    tasks.forEach(function (t) {
+      var st = t.status === 'complete' ? 'complete' : (t.status === 'progress' ? 'progress' : 'pending');
+      out[st]++;
+      var name = t.category || '미분류';
+      if (!byName[name]) { byName[name] = { name: name, all: 0, complete: 0, progress: 0, pending: 0 }; out.categories.push(byName[name]); }
+      byName[name].all++;
+      byName[name][st]++;
+    });
+    return out;
   }
 
   /* ---------- 모델 만들기 ---------- */
@@ -358,6 +434,24 @@ window.PBDrive = (function () {
       };
     });
 
+    // 태스크 기준표 — 폴더·파일이 아니라 '업무자동화 목록'의 태스크 블록만 셉니다.
+    var taskDoc = flat.filter(function (f) {
+      return f.mimeType === DOC && (f.id === TASK_DOC_ID || f.name === TASK_DOC_NAME);
+    })[0];
+    var tasks = parseTasks(taskDoc ? texts[taskDoc.id] : '');
+    var taskSource = 'doc';
+    if (!tasks.length) {
+      // 목록 문서를 못 읽거나 블록이 없을 때만 스킬 정의로 대신합니다.
+      taskSource = 'skills';
+      tasks = skillModels.map(function (s) {
+        return {
+          no: s.no, title: s.name, category: '', status: s.status, statusText: '',
+          skill: s.name, output: s.output, note: s.statusText, next: s.next
+        };
+      });
+    }
+    var taskStats = statsOfTasks(tasks);
+
     // 블로그
     var posts = items.filter(function (i) { return i.area === 'blog' && i.kind === 'doc' && /\/원고\//.test(i.path); });
     var published = posts.filter(function (p) { return p.publishedUrl; });
@@ -420,12 +514,25 @@ window.PBDrive = (function () {
       areas: areas,
       items: items,
       skills: skillModels,
+      tasks: tasks,
+      taskStats: taskStats,
+      taskSource: taskSource,
+      taskDoc: taskDoc ? {
+        id: taskDoc.id,
+        title: taskDoc.name,
+        path: taskDoc.path,
+        url: taskDoc.webViewLink || ('https://docs.google.com/document/d/' + taskDoc.id + '/edit')
+      } : null,
       timeline: timeline,
       pending: pending,
       habits: habits,
       research: { buckets: researchBuckets, topics: topics },
       stats: {
-        automation: skillModels.length,
+        automation: taskStats.all,
+        taskAll: taskStats.all,
+        taskComplete: taskStats.complete,
+        taskProgress: taskStats.progress,
+        taskPending: taskStats.pending,
         skillsRun: skillModels.filter(function (s) { return s.status === 'complete'; }).length,
         skillsTotal: skillModels.length,
         posts: posts.length,
