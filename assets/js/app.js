@@ -38,6 +38,8 @@
   var habits = loadHabits();
   var tokenExpiry = 0;
   var toastTimer = null;
+  /* 주소 기준(해시만 바꿔 씁니다) — GitHub Pages 하위 경로에서도 그대로 동작합니다. */
+  var BASE_URL = (window.location.pathname || '/') + (window.location.search || '');
 
   var $ = function (sel, root) { return (root || document).querySelector(sel); };
   var $$ = function (sel, root) { return Array.prototype.slice.call((root || document).querySelectorAll(sel)); };
@@ -235,6 +237,7 @@
     $('#modeText').textContent = live ? (state.connectedEmail ? '드라이브 연결됨' : '드라이브 실시간') : '프리뷰 데이터';
     $('#btnSync').hidden = !(live || state.source === 'preview' && state.token);
     $('#btnConnect').hidden = !!state.token;
+    if ($('#btnDisconnect')) $('#btnDisconnect').hidden = !state.token;
     $('#footerSource').textContent = live
       ? '드라이브 실시간 · ' + (state.connectedEmail || '내 계정') + (state.model.syncedAt ? ' · ' + fmtDateTime(state.model.syncedAt) : '')
       : '프리뷰 데이터 · 2026-11-20 스냅샷';
@@ -586,7 +589,7 @@
       '<dt>저장소</dt><dd><a href="https://github.com/cspang97/pickle-base" target="_blank" rel="noopener">github.com/cspang97/pickle-base</a> (public)</dd>' +
       '<dt>배포</dt><dd>GitHub Pages · main 브랜치 루트 · 2026-11-20</dd>' +
       '<dt>구성</dt><dd>정적 HTML/CSS/JS · Google Identity Services + Drive API v3 (읽기 전용)</dd>' +
-      '<dt>담은 것</dt><dd>허브 대시보드 · 영역별 탭 · 통합 검색/상태 필터 · 습관 체크 · 프리뷰 데이터</dd>' +
+      '<dt>담은 것</dt><dd>허브 대시보드 · 영역별 탭 · 통합 검색/상태 필터 · 습관 체크 · 프리뷰 데이터 · 로그인 유지 · 뒤로가기 기록</dd>' +
       '<dt>다음 후보</dt><dd>습관 기록을 드라이브 문서로 남기기 · 원고 상태 자동 갱신 · 실행 주기 정하기</dd>' +
       '</dl>' +
       '<div class="row row--gap"><a class="btn btn--primary btn--sm" href="' + esc(appUrl) + '" target="_blank" rel="noopener">앱 열기</a>' +
@@ -688,9 +691,10 @@
   }
 
   /* ================= 상세 패널 ================= */
-  function openDrawer(id) {
+  function openDrawer(id, opts) {
+    opts = opts || {};
     var item = state.model.items.filter(function (i) { return String(i.id) === String(id); })[0];
-    if (!item) return;
+    if (!item) return false;
     var body = $('#drawerBody');
     var m = statusMeta(item);
     var rows = [
@@ -718,10 +722,13 @@
       (state.source === 'preview' ? '<p class="small muted" style="margin-top:14px">프리뷰 모드에서는 요약만 보입니다. Google 계정을 연결하면 문서 전체를 드라이브에서 바로 읽습니다.</p>' : '');
     $('#drawer').hidden = false;
     document.body.style.overflow = 'hidden';
+    if (opts.history !== false) pushRoute(state.view, { kind: 'item', id: item.id });
+    return true;
   }
-  function openTaskDrawer(no) {
+  function openTaskDrawer(no, opts) {
+    opts = opts || {};
     var t = taskList().filter(function (x) { return String(x.no) === String(no); })[0];
-    if (!t) return;
+    if (!t) return false;
     var doc = state.model && state.model.taskDoc;
     var rows = [
       ['분류', t.category || '미분류'],
@@ -742,24 +749,50 @@
       '<p class="small muted" style="margin-top:14px">태스크 상태는 <code>01_업무자동화목록/업무자동화 목록</code> 문서의 태스크 블록에서 읽습니다.</p>';
     $('#drawer').hidden = false;
     document.body.style.overflow = 'hidden';
+    if (opts.history !== false) pushRoute(state.view, { kind: 'task', id: t.no });
+    return true;
   }
-  function closeDrawer() {
+  /* 닫기는 히스토리에서 이 드로어 항목을 되감습니다. ✕로 닫은 다음 뒤로가기를 누르면
+     같은 탭이 아니라 직전 화면으로 갑니다(같은 화면이 두 번 나오지 않게). */
+  function closeOverlayHistory() {
+    var s = window.history.state;
+    if (s && s.pb && s.overlay) {
+      try { window.history.back(); return; } catch (e) { /* 아래로 */ }
+    }
+    replaceRoute(state.view, null);
+  }
+  function closeDrawerRaw() {
+    if ($('#drawer').hidden) return false;
     $('#drawer').hidden = true;
     document.body.style.overflow = '';
+    return true;
+  }
+  function closeDrawer() {
+    if (!closeDrawerRaw()) return;
+    closeOverlayHistory();
   }
 
   /* ================= 설정 ================= */
-  function openSettings() {
+  function openSettings(opts) {
+    opts = opts || {};
     $('#cfgClientId').value = cfg.clientId || '';
     $('#cfgFolderId').value = cfg.folderId || '';
     $('#cfgLockEnabled').checked = !!(cfg.lock && cfg.lock.enabled);
     $('#cfgLockPin').value = '';
     $('#modal').hidden = false;
     document.body.style.overflow = 'hidden';
+    if (opts.history !== false) pushRoute(state.view, { kind: 'modal', id: 'settings' });
+    return true;
   }
-  function closeSettings() {
+  function closeModalRaw() {
+    if ($('#modal').hidden) return false;
     $('#modal').hidden = true;
     if ($('#drawer').hidden) document.body.style.overflow = '';
+    return true;
+  }
+  function closeSettings() {
+    if (!closeModalRaw()) return;
+    closeOverlayHistory();
   }
   function sha256(text) {
     if (!(window.crypto && window.crypto.subtle)) return Promise.resolve('plain:' + text);
@@ -789,6 +822,7 @@
         state.token = res.token;
         state.connectedEmail = '';
         tokenExpiry = res.expiresAt || 0;
+        if (window.PBDrive.saveToken) window.PBDrive.saveToken(res.token, res.expiresAt);
         return doSync('연결됨');
       })
       .catch(function (err) {
@@ -798,8 +832,49 @@
       .then(function () { setBusy(false); });
   }
 
+  /* 로그인 상태 정리 — 메모리와 브라우저 저장본을 함께 지웁니다. */
+  function forgetToken() {
+    state.token = null;
+    tokenExpiry = 0;
+    if (window.PBDrive && window.PBDrive.clearToken) window.PBDrive.clearToken();
+  }
+
+  /* 페이지를 새로 열거나 뒤로가기로 돌아왔 때 저장된 로그인을 되살립니다. */
+  function restoreToken() {
+    if (!(window.PBDrive && window.PBDrive.loadToken)) return false;
+    if (!cfg.clientId) {
+      // 클라이언트 ID가 없으면 이 토큰은 쓸 수 없습니다 — 남겨 두지 않고 지웁니다.
+      if (window.PBDrive.clearToken) window.PBDrive.clearToken();
+      return false;
+    }
+    var saved = window.PBDrive.loadToken();
+    if (!saved || !saved.token) return false;
+    state.token = saved.token;
+    tokenExpiry = saved.expiresAt || 0;
+    return true;
+  }
+
+  /* 연결 해제 — 저장된 토큰을 지우고 구글 쪽 토큰도 가능하면 폐기합니다. */
+  function disconnect() {
+    var t = state.token;
+    if (window.PBDrive && window.PBDrive.revoke) window.PBDrive.revoke(t);
+    forgetToken();
+    state.model = PREVIEW;
+    state.source = 'preview';
+    state.connectedEmail = '';
+    state.error = null;
+    render();
+    toast('연결을 해제했습니다 · 저장된 로그인도 지웠습니다');
+  }
+
   function doSync(doneMsg) {
     if (!state.token) { openSettings(); return Promise.resolve(); }
+    if (tokenExpiry && Date.now() > tokenExpiry - 60000) {
+      forgetToken();
+      state.error = '구글 로그인이 만료되었습니다. “Google 계정 연결”을 다시 눌러 주세요.';
+      render();
+      return Promise.resolve();
+    }
     setBusy(true, '드라이브 읽는 중…');
     return window.PBDrive.fetchModel({ token: state.token, folderId: cfg.folderId || '', folderName: cfg.folderName || 'Pickle_Base' })
       .then(function (model) {
@@ -812,11 +887,95 @@
         toast((doneMsg ? doneMsg + ' · ' : '') + '드라이브에서 ' + n + '개 항목을 읽었습니다');
       })
       .catch(function (err) {
-        if (err && err.status === 401) { state.token = null; }
+        if (err && err.status === 401) { forgetToken(); }
         state.error = (err && (err.friendly || err.message)) || '드라이브를 읽지 못했습니다.';
         render();
       })
       .then(function () { setBusy(false); });
+  }
+
+  /* ================= 주소·히스토리 (모바일 뒤로가기) =================
+     탭과 상세 드로어·설정 모달을 브라우저 히스토리에 쌓습니다. 그래서 모바일
+     뒤로가기는 앱 밖으로 나가지 않고, 드로어를 닫거나 이전 탭으로 돌아갑니다.
+     주소 해시(#blog)도 함께 맞춰 새로고침·링크 공유에서도 같은 화면이 열립니다. */
+  var VIEWS = TABS.map(function (t) { return t.key; });
+  function validView(key) { return VIEWS.indexOf(String(key)) >= 0; }
+  function routeUrl(view, overlay) {
+    var v = validView(view) ? view : 'dashboard';
+    var h = v !== 'dashboard' ? '#' + v : '';
+    if (overlay && overlay.kind && overlay.id != null) {
+      h = '#' + v + '/' + overlay.kind + '/' + encodeURIComponent(String(overlay.id));
+    }
+    return BASE_URL + h;
+  }
+  function routeFromHash() {
+    var raw = String(window.location.hash || '').replace(/^#\/?/, '');
+    if (!raw) return { view: 'dashboard', overlay: null };
+    var parts = raw.split('/');
+    var view = validView(parts[0]) ? parts[0] : 'dashboard';
+    var overlay = null;
+    if (parts[2] && (parts[1] === 'item' || parts[1] === 'task' || parts[1] === 'modal')) {
+      overlay = { kind: parts[1], id: decodeURIComponent(parts.slice(2).join('/')) };
+    }
+    return { view: view, overlay: overlay };
+  }
+  function pushRoute(view, overlay) {
+    var url = routeUrl(view, overlay);
+    var s = window.history.state;
+    if (s && s.pb && routeUrl(s.view, s.overlay) === url) return false;
+    try {
+      window.history.pushState({ pb: 1, view: view, overlay: overlay || null }, '', url);
+      return true;
+    } catch (e) { return false; }
+  }
+  function replaceRoute(view, overlay) {
+    try {
+      window.history.replaceState({ pb: 1, view: view, overlay: overlay || null }, '', routeUrl(view, overlay));
+      return true;
+    } catch (e) { return false; }
+  }
+  function scrollTop() {
+    try { window.scrollTo({ top: 0, behavior: 'smooth' }); } catch (e) { /* 스크롤 불가 */ }
+  }
+
+  /* 탭 이동 — 화면을 바꾸고 히스토리에 한 칸 쌓습니다. */
+  function goTab(key) {
+    if (!validView(key)) return;
+    state.view = key;
+    state.query = '';
+    var si = $('#search');
+    if (si) si.value = '';
+    closeDrawerRaw();
+    closeModalRaw();
+    render();
+    pushRoute(key, null);
+    scrollTop();
+  }
+
+  /* 히스토리 한 칸을 거슬러 올 때(뒤로가기) 그 칸의 화면을 그대로 복원합니다. */
+  function applyRoute(route) {
+    var r = route || routeFromHash();
+    var target = validView(r.view) ? r.view : 'dashboard';
+    var changed = state.view !== target;
+    state.view = target;
+    state.query = '';
+    var si = $('#search');
+    if (si) si.value = '';
+    closeDrawerRaw();
+    closeModalRaw();
+    render();
+    var o = r.overlay;
+    var opened = true;
+    if (o && o.kind === 'task') opened = openTaskDrawer(o.id, { history: false });
+    else if (o && o.kind === 'item') opened = openDrawer(o.id, { history: false });
+    else if (o && o.kind === 'modal') opened = openSettings({ history: false });
+    if (!opened) replaceRoute(state.view, null);
+    if (changed) scrollTop();
+  }
+  function currentRoute() {
+    var s = window.history.state;
+    if (s && s.pb) return { view: s.view || 'dashboard', overlay: s.overlay || null };
+    return routeFromHash();
   }
 
   /* ================= 이벤트 ================= */
@@ -828,13 +987,7 @@
       tr.addEventListener('click', function () { openTaskDrawer(tr.getAttribute('data-task')); });
     });
     $$('#main [data-tab-jump]').forEach(function (el) {
-      el.addEventListener('click', function () {
-        state.view = el.getAttribute('data-tab-jump');
-        state.query = '';
-        $('#search').value = '';
-        render();
-        window.scrollTo({ top: 0, behavior: 'smooth' });
-      });
+      el.addEventListener('click', function () { goTab(el.getAttribute('data-tab-jump')); });
     });
     var reset = $('#habitReset');
     if (reset) reset.addEventListener('click', function () {
@@ -873,11 +1026,12 @@
     $('#tabs').addEventListener('click', function (e) {
       var b = e.target.closest('[data-tab]');
       if (!b) return;
-      state.view = b.getAttribute('data-tab');
-      state.query = '';
-      $('#search').value = '';
-      render();
-      window.scrollTo({ top: 0, behavior: 'smooth' });
+      goTab(b.getAttribute('data-tab'));
+    });
+
+    // 모바일 뒤로가기 — 앱 밖으로 나가기 전에 먼저 앱 안에서 한 칸 돌아갑니다.
+    window.addEventListener('popstate', function () {
+      applyRoute(currentRoute());
     });
 
     // 상태 필터
@@ -908,7 +1062,8 @@
     // 헤더 버튼
     $('#btnConnect').addEventListener('click', doConnect);
     $('#btnSync').addEventListener('click', function () { doSync(); });
-    $('#btnSettings').addEventListener('click', openSettings);
+    $('#btnDisconnect').addEventListener('click', disconnect);
+    $('#btnSettings').addEventListener('click', function () { openSettings(); });
 
     // 닫기
     $$('[data-close-modal]').forEach(function (el) { el.addEventListener('click', closeSettings); });
@@ -924,19 +1079,14 @@
       cfg.clientId = v;
       cfg.folderId = $('#cfgFolderId').value.trim();
       saveCfg();
+      if (!v) forgetToken();
       closeSettings();
       render();
       toast(v ? '저장했습니다. 상단의 Google 계정 연결을 눌러 주세요.' : '클라이언트 ID를 비웠습니다.');
     });
     $('#cfgClear').addEventListener('click', function () {
-      state.token = null;
-      state.model = PREVIEW;
-      state.source = 'preview';
-      state.connectedEmail = '';
-      state.error = null;
+      disconnect();
       closeSettings();
-      render();
-      toast('연결을 해제하고 프리뷰로 돌아왔습니다');
     });
     $('#cfgPreview').addEventListener('click', function () {
       state.model = PREVIEW; state.source = 'preview'; state.error = null;
@@ -962,6 +1112,7 @@
     });
     $('#cfgReset').addEventListener('click', function () {
       try { localStorage.removeItem(CFG_KEY); localStorage.removeItem(HABIT_KEY); } catch (e) { /* noop */ }
+      if (window.PBDrive && window.PBDrive.clearToken) window.PBDrive.clearToken();
       location.reload();
     });
 
@@ -987,7 +1138,28 @@
       });
     }
 
+    // 주소(해시)에 적힌 화면에서 시작하고, 지금 상태를 히스토리에 기록합니다.
+    // 모바일 뒤로가기 파일이 앱 안에서 먼저 움직이도록 하는 출발점입니다.
+    var bootRoute = routeFromHash();
+    if (validView(bootRoute.view)) state.view = bootRoute.view;
+    replaceRoute(state.view, null);
+    if (bootRoute.overlay) pushRoute(state.view, bootRoute.overlay);
+
+    // 저장된 구글 로그인이 살아 있으면 다시 묻지 않고 이어서 읽습니다.
+    var resumed = restoreToken();
+
     render();
+
+    if (bootRoute.overlay) {
+      var opened = bootRoute.overlay.kind === 'task'
+        ? openTaskDrawer(bootRoute.overlay.id, { history: false })
+        : bootRoute.overlay.kind === 'item'
+          ? openDrawer(bootRoute.overlay.id, { history: false })
+          : true;
+      if (!opened) replaceRoute(state.view, null);
+    }
+
+    if (resumed) doSync('연결 유지');
 
     // 저장된 클라이언트 ID가 있으면 한 번 안내
     if (cfg.clientId) {

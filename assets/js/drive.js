@@ -1,5 +1,6 @@
 /* Google Drive 읽기 연동 (Google Identity Services + Drive API v3)
-   - 사용자가 넣은 OAuth 클라이언트 ID로 브라우저에서 바로 토큰을 받습니다(암묵적 흐름, 토큰은 메모리에만).
+   - 사용자가 넣은 OAuth 클라이언트 ID로 브라우저에서 바로 토큰을 받습니다(암묵적 흐름).
+     토큰은 만료 시각과 함께 이 브라우저(localStorage)에만 보관해 새로고침·뒤로가기에도 이어집니다.
    - 요청 범위는 읽기 전용 drive.readonly 하나입니다.
    - 받아온 드라이브 구조·문서를 앱 모델(areas/items/skills/...)로 변환합니다. */
 window.PBDrive = (function () {
@@ -8,6 +9,11 @@ window.PBDrive = (function () {
   var FOLDER = 'application/vnd.google-apps.folder';
   var DOC = 'application/vnd.google-apps.document';
   var GIS_SRC = 'https://accounts.google.com/gsi/client';
+  /* 액세스 토큰 보관 위치 — 새로고침·뒤로가기로 페이지가 다시 그려져도
+     로그인이 살아 있도록 이 브라우저(localStorage)에만 둡니다.
+     만료 60초 전부터는 없는 것으로 봅니다(요청 도중 만료 방지). */
+  var TOKEN_KEY = 'pb.token.v1';
+  var TOKEN_SKEW_MS = 60 * 1000;
 
   /* ---------- 스크립트 / 인증 ---------- */
   function loadGis() {
@@ -45,7 +51,10 @@ window.PBDrive = (function () {
               reject(new Error(friendlyAuthError(resp.error, resp.error_description)));
               return;
             }
-            resolve({ token: resp.access_token, expiresAt: Date.now() + ((resp.expires_in || 3500) * 1000) });
+            var expiresIn = Number(resp.expires_in) > 0 ? Number(resp.expires_in) : 3600;
+            var expiresAt = Date.now() + (expiresIn * 1000);
+            saveToken(resp.access_token, expiresAt);
+            resolve({ token: resp.access_token, expiresAt: expiresAt, expiresIn: expiresIn });
           },
           error_callback: function (err) {
             if (settled) return;
@@ -59,6 +68,46 @@ window.PBDrive = (function () {
         client.requestAccessToken({ prompt: '' });
       });
     });
+  }
+
+  /* ---------- 토큰 보관 ---------- */
+  function store() {
+    try { return window.localStorage || null; } catch (e) { return null; }
+  }
+  function saveToken(token, expiresAt) {
+    var s = store();
+    if (!s || !token) return false;
+    try {
+      s.setItem(TOKEN_KEY, JSON.stringify({ token: String(token), expiresAt: Number(expiresAt) || 0 }));
+      return true;
+    } catch (e) { return false; }
+  }
+  function loadToken(now) {
+    var s = store();
+    if (!s) return null;
+    var raw = null;
+    try { raw = s.getItem(TOKEN_KEY); } catch (e) { return null; }
+    if (!raw) return null;
+    var o = null;
+    try { o = JSON.parse(raw); } catch (e) { o = null; }
+    if (!o || !o.token) { clearToken(); return null; }
+    var expiresAt = Number(o.expiresAt) || 0;
+    var t = typeof now === 'number' ? now : Date.now();
+    if (!expiresAt || expiresAt - TOKEN_SKEW_MS <= t) { clearToken(); return null; }
+    return { token: String(o.token), expiresAt: expiresAt };
+  }
+  function clearToken() {
+    var s = store();
+    if (!s) return false;
+    try { s.removeItem(TOKEN_KEY); return true; } catch (e) { return false; }
+  }
+  /* 연결 해제 시 구글 쪽 토큰도 함께 폐기합니다(가능할 때만, 실패해도 진행). */
+  function revoke(token) {
+    try {
+      if (!token) return;
+      if (!(window.google && window.google.accounts && window.google.accounts.oauth2)) return;
+      window.google.accounts.oauth2.revoke(token, function () {});
+    } catch (e) { /* 폐기 실패는 무시 — 저장된 토큰은 지웁니다 */ }
   }
 
   function friendlyAuthError(code, desc) {
@@ -563,6 +612,12 @@ window.PBDrive = (function () {
   return {
     connect: connect,
     fetchModel: fetchModel,
+    saveToken: saveToken,
+    loadToken: loadToken,
+    clearToken: clearToken,
+    revoke: revoke,
+    TOKEN_KEY: TOKEN_KEY,
+    TOKEN_SKEW_MS: TOKEN_SKEW_MS,
     SCOPE: SCOPE
   };
 })();

@@ -8,7 +8,7 @@
 <meta name="theme-color" content="#f4f5f2">
 <meta name="robots" content="noindex,nofollow">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='24' fill='%2320644a'/%3E%3Ctext y='.9em' x='50%25' text-anchor='middle' font-size='62'%3E%F0%9F%A5%92%3C/text%3E%3C/svg%3E">
-<link rel="stylesheet" href="assets/css/app.css?v=15">
+<link rel="stylesheet" href="assets/css/app.css?v=16">
 </head>
 <body>
 
@@ -42,6 +42,7 @@
     </span>
     <button id="btnSync" class="btn btn--ghost btn--sm" hidden>동기화</button>
     <button id="btnConnect" class="btn btn--primary btn--sm">Google 계정 연결</button>
+    <button id="btnDisconnect" class="btn btn--ghost btn--sm" hidden>연결 해제</button>
     <button id="btnSettings" class="iconbtn" aria-label="설정" title="설정">
       <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3.2"/><path d="M19.4 15a1.7 1.7 0 0 0 .34 1.87l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.7 1.7 0 0 0-1.87-.34 1.7 1.7 0 0 0-1.03 1.56V21a2 2 0 1 1-4 0v-.11a1.7 1.7 0 0 0-1.11-1.56 1.7 1.7 0 0 0-1.87.34l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.7 1.7 0 0 0 4.6 15a1.7 1.7 0 0 0-1.56-1.03H3a2 2 0 1 1 0-4h.11A1.7 1.7 0 0 0 4.6 8.86a1.7 1.7 0 0 0-.34-1.87l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.7 1.7 0 0 0 1.87.34H9a1.7 1.7 0 0 0 1-1.56V3a2 2 0 1 1 4 0v.11a1.7 1.7 0 0 0 1.03 1.56 1.7 1.7 0 0 0 1.87-.34l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.7 1.7 0 0 0-.34 1.87V9a1.7 1.7 0 0 0 1.56 1h.11a2 2 0 1 1 0 4h-.11a1.7 1.7 0 0 0-1.55 1z"/></svg>
     </button>
@@ -96,6 +97,7 @@
       <section class="formblock">
         <h3>Google Drive 실시간 연동</h3>
         <p class="hint">내 Google Cloud에서 만든 <strong>OAuth 클라이언트 ID</strong>를 넣으면, 이 브라우저가 내 드라이브의 <code>Pickle_Base</code> 폴더와 Google 문서를 직접 읽어옵니다. 값은 이 브라우저(localStorage)에만 저장되고 어디로도 전송되지 않습니다.</p>
+        <p class="hint">로그인 상태(액세스 토큰)도 이 브라우저에만, 만료 전까지 저장됩니다. 그래서 새로고침하거나 뒤로가기를 눌러도 다시 로그인하지 않습니다. 상단 <strong>연결 해제</strong>를 누르면 저장된 토큰을 바로 지우고 구글 쪽 토큰도 폐기합니다.</p>
         <label class="field">
           <span>OAuth 클라이언트 ID</span>
           <input id="cfgClientId" type="text" spellcheck="false" placeholder="000000000000-xxxxxxxx.apps.googleusercontent.com" autocomplete="off">
@@ -155,8 +157,8 @@
 <noscript><p style="max-width:720px;margin:24px auto;padding:16px;border:1px solid #d3d9cf;border-radius:12px;font-family:sans-serif">이 워크스페이스는 자바스크립트로 그립니다. 브라우저에서 자바스크립트를 켜 주세요.</p></noscript>
 
 <script src="https://accounts.google.com/gsi/client" defer></script>
-<script src="assets/js/preview-data.js?v=15"></script>
-<script src="assets/js/drive.js?v=15"></script>
-<script src="assets/js/app.js?v=15"></script>
+<script src="assets/js/preview-data.js?v=16"></script>
+<script src="assets/js/drive.js?v=16"></script>
+<script src="assets/js/app.js?v=16"></script>
 </body>
 </html>
