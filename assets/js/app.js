@@ -316,7 +316,7 @@
       statTile('미정', tc.pending, '건', '정하면 시작되는 태스크') +
       '</div>';
 
-    out += '<section class="card"><div class="card__head"><div><h2>태스크 현황</h2><p>' + tc.all + '건 · ' +
+    out += '<section class="card"><div class="card__head"><div><h2>태스크 현황</h2><p>' + visibleTasks().length + '건 · ' + +
       (state.filter === 'all' ? '전체' : (STATUS[state.filter] || {}).label || '') + '</p></div>' +
       '<span class="small muted">' + esc(taskSourceLabel()) + '</span></div>' +
       taskCategoryStrip() + taskTable(visibleTasks()) + '</section>';
@@ -368,15 +368,19 @@
       taskCategoryStrip() + taskTable(visibleTasks()) + '</section>';
 
     out += '<section class="card"><div class="card__head"><div><h2>스킬 문서</h2><p>목적·실행 조건·입력·절차·결과물·규칙</p></div></div>' +
-      '<div class="stack">' + (skillItems.length ? skillItems.map(function (i) { return itemRow(i); }).join('') : emptyInline('스킬 문서를 찾지 못했습니다')) + '</div></section>';
+      '<div class="stack">' + (skillItems.length ? skillItems.map(function (i) { return itemRow(i); }).join('') : emptyInline(hubEmptyText('스킬 문서'))) + '</div></section>';
 
     out += '<section class="card"><div class="card__head"><div><h2>기획메모</h2><p>SNS 유니버스 · 웹앱 구상</p></div></div>' +
-      '<div class="stack">' + (memoItems.length ? memoItems.map(function (i) { return itemRow(i); }).join('') : emptyInline('기획메모가 없습니다')) + '</div></section>';
+      '<div class="stack">' + (memoItems.length ? memoItems.map(function (i) { return itemRow(i); }).join('') : emptyInline(hubEmptyText('기획메모'))) + '</div></section>';
 
     out += '<section class="card"><div class="card__head"><div><h2>목록·지도 문서</h2><p>허브 색인과 구조 지도</p></div></div>' +
-      '<div class="stack">' + (otherItems.length ? otherItems.map(function (i) { return itemRow(i); }).join('') : emptyInline('문서가 없습니다')) + '</div></section>';
+      '<div class="stack">' + (otherItems.length ? otherItems.map(function (i) { return itemRow(i); }).join('') : emptyInline(hubEmptyText('문서'))) + '</div></section>';
 
     return '<div class="view">' + out + '</div>';
+  }
+
+  function hubEmptyText(label) {
+    return state.filter === 'all' ? label + '를 찾지 못했습니다' : '필터에 맞는 ' + label + '가 없습니다';
   }
 
   function emptyInline(text, sub) {
