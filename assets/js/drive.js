@@ -158,19 +158,27 @@ window.PBDrive = (function () {
     return String(name || '').replace(/^<<<EXTERNAL_UNTRUSTED_CONTENT[^>]*>>>\s*/, '').replace(/<<<END_EXTERNAL_UNTRUSTED_CONTENT[^>]*>>>/g, '').trim();
   }
 
+  var HEADINGS = ['목적', '실행 조건', '입력', '절차', '결과물', '규칙', '아직 정하지 않은 것', '실행 기록', '지금 등록된 습관'];
+
+  function isHeadingLine(line) {
+    return HEADINGS.some(function (h) {
+      return line === h || line.indexOf(h + ' ') === 0 || line.indexOf(h + '(') === 0;
+    });
+  }
+
   function sectionLines(text, heading) {
     var lines = String(text || '').split('\n');
     var idx = -1;
     for (var i = 0; i < lines.length; i++) {
       var t = lines[i].trim();
-      if (t === heading || t.indexOf(heading) === 0) { idx = i; break; }
+      if (t === heading || t.indexOf(heading + ' ') === 0 || t.indexOf(heading + '(') === 0) { idx = i; break; }
     }
     if (idx < 0) return [];
     var out = [];
     for (var j = idx + 1; j < lines.length; j++) {
       var line = lines[j].trim();
       if (!line) { if (out.length) break; continue; }
-      if (/^(목적|실행 조건|입력|절차|결과물|규칙|아직 정하지 않은 것|실행 기록|지금 등록된 습관)\b/.test(line)) break;
+      if (isHeadingLine(line)) break;
       out.push(line);
     }
     return out;

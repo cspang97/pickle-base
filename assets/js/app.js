@@ -102,15 +102,18 @@
   function itemsOf(area) {
     return state.model.items.filter(function (i) { return i.area === area; });
   }
-  function matching(item) {
-    if (state.filter !== 'all' && item.status !== state.filter) return false;
+  function matchesQuery(item) {
     var q = state.query.trim().toLowerCase();
     if (!q) return true;
     var hay = [item.title, item.summary, item.path, (item.tags || []).join(' '), item.excerpt || ''].join(' ').toLowerCase();
     return q.split(/\s+/).every(function (w) { return hay.indexOf(w) >= 0; });
   }
+  function matching(item) {
+    if (state.filter !== 'all' && item.status !== state.filter) return false;
+    return matchesQuery(item);
+  }
   function visible(list) { return list.filter(matching); }
-  function countBy(key) { return state.model.items.filter(function (i) { return i.status === key && (!state.query || matching(i)); }).length; }
+  function countBy(key) { return state.model.items.filter(function (i) { return i.status === key && matchesQuery(i); }).length; }
 
   /* ================= chrome ================= */
   function renderTabs() {
@@ -137,7 +140,7 @@
     var box = $('#statusChips');
     var defs = [{ k: 'all', label: '전체' }, { k: 'complete', label: '완료' }, { k: 'progress', label: '진행중' }, { k: 'pending', label: '미정' }];
     box.innerHTML = defs.map(function (d) {
-      var n = d.k === 'all' ? state.model.items.filter(function (i) { return !state.query || matching(i); }).length : countBy(d.k);
+      var n = d.k === 'all' ? state.model.items.filter(matchesQuery).length : countBy(d.k);
       return '<button class="chip" data-filter="' + d.k + '" aria-pressed="' + (state.filter === d.k) + '">' +
         d.label + '<span class="chip__count">' + n + '</span></button>';
     }).join('');
