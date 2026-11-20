@@ -139,6 +139,29 @@
     taskList().forEach(function (t) { c.all++; if (c[t.status] !== undefined) c[t.status]++; });
     return c;
   }
+  /* ---------- 영역(탭)별 태스크 ----------
+     태스크의 '분류' 문자열을 탭 영역 키로 맞춥니다. 목록 문서의 분류는
+     네이버블로그 / 리서치 / 애플리케이션 / 일상생활 네 가지이지만, 표기가 조금 달라도 받습니다. */
+  var AREA_CAT = {
+    blog: { label: '네이버블로그', test: /네이버블로그|블로그/ },
+    research: { label: '리서치', test: /리서치/ },
+    app: { label: '애플리케이션', test: /애플리케이션|앱|어플/ },
+    daily: { label: '일상생활', test: /일상생활|일상|습관|건강/ }
+  };
+  function normCategory(s) { return String(s || '').replace(/[\s·・]/g, '').toLowerCase(); }
+  function taskAreaKey(t) {
+    var c = normCategory(t && t.category);
+    if (!c) return '';
+    var keys = ['blog', 'research', 'app', 'daily'];
+    for (var i = 0; i < keys.length; i++) {
+      if (AREA_CAT[keys[i]].test.test(c)) return keys[i];
+    }
+    return '';
+  }
+  function areaTasks(areaKey) {
+    return taskList().filter(function (t) { return taskAreaKey(t) === areaKey; });
+  }
+
   function taskCategories() {
     var out = [];
     var map = {};
@@ -272,9 +295,9 @@
       '<th class="taskno">#</th><th>태스크</th><th>분류</th><th>상태</th><th>연결 스킬</th><th>결과물 위치</th><th>다음 할 일</th>' +
       '</tr></thead><tbody>' +
       list.map(function (t) {
-        return '<tr>' +
+        return '<tr class="taskrow" data-task="' + esc(String(t.no || '')) + '" title="태스크 상세 보기">' +
           '<td class="taskno">' + esc(String(t.no || '')) + '</td>' +
-          '<td><b>' + esc(t.title) + '</b>' + (t.note ? '<div class="path">' + esc(t.note) + '</div>' : '') + '</td>' +
+          '<td><button class="table__link" type="button">' + esc(t.title) + '</button>' + (t.note ? '<div class="path">' + esc(t.note) + '</div>' : '') + '</td>' +
           '<td>' + esc(t.category || '미분류') + '</td>' +
           '<td>' + chip(t.status) + '</td>' +
           '<td class="path">' + esc(t.skill || '—') + '</td>' +
@@ -282,6 +305,35 @@
           '<td class="path">' + esc(t.next || '—') + '</td>' +
           '</tr>';
       }).join('') + '</tbody></table></div>';
+  }
+
+  /* 영역 탭 상단의 "이 영역 태스크 현황" 카드 */
+  function areaTaskCard(areaKey) {
+    var def = AREA_CAT[areaKey];
+    if (!def) return '';
+    var all = areaTasks(areaKey);
+    var rows = all.filter(matchingTask);
+    var counts = { complete: 0, progress: 0, pending: 0 };
+    all.forEach(function (t) { if (counts[t.status] !== undefined) counts[t.status]++; });
+    var head = '<div class="card__head"><div><h2>이 영역 태스크 현황</h2><p>' +
+      rows.length + '건 · ' + (state.filter === 'all' ? '전체' : ((STATUS[state.filter] || {}).label || '')) +
+      ' · 분류 ‘' + esc(def.label) + '’ 태스크 · 업무자동화 목록 기준</p></div>' +
+      '<div class="row row--gap">' +
+      '<span class="tag">완료 ' + counts.complete + '</span>' +
+      '<span class="tag">진행중 ' + counts.progress + '</span>' +
+      '<span class="tag">미정 ' + counts.pending + '</span>' +
+      (all.length ? '<button class="btn btn--ghost btn--sm" data-tab-jump="hub" type="button">업무자동화 탭에서 전체 보기</button>' : '') +
+      '</div></div>';
+    var body;
+    if (!all.length) {
+      body = emptyInline('이 분류에 등록된 태스크가 없습니다.',
+        '업무자동화 목록에 분류 ‘' + esc(def.label) + '’ 태스크를 적으면 여기에 함께 보입니다. 아래 내용은 그대로 볼 수 있습니다.');
+    } else if (!rows.length) {
+      body = emptyInline('조건에 맞는 태스크가 없습니다', '상태 필터를 “전체”로 바꾸거나 검색어를 지워 보세요.');
+    } else {
+      body = taskTable(rows);
+    }
+    return '<section class="card" data-area-tasks="' + areaKey + '">' + head + body + '</section>';
   }
 
   function taskCategoryStrip() {
@@ -398,6 +450,8 @@
       '원고마다 상태(초안·발행)와 글자 수를 500자 기준으로 관리합니다. 발행 링크는 원고에 함께 남깁니다.',
       '<span>발행 ' + (s.published || 0) + '편 · 초안 ' + (s.drafts || 0) + '편</span><span>글자 수 기준 ' + limit + '자</span>');
 
+    out += areaTaskCard('blog');
+
     out += '<div class="grid grid--stats">' +
       statTile('원고', s.posts || 0, '편', '02_네이버블로그/원고') +
       statTile('발행', s.published || 0, '편', 'blog.naver.com/cspang97') +
@@ -450,6 +504,8 @@
       '주제 하나를 정하면 자료 → 출처 → 요약노트가 한 묶음으로 쌓입니다. 요약은 핵심 3~5줄과 나에게 의미 있는 시사점까지.',
       '<span>버킷 3 · 요약노트 · 자료 · 출처</span><span>주기 · 미정</span>');
 
+    out += areaTaskCard('research');
+
     out += '<div class="buckets">' + buckets.map(function (b) {
       return '<div class="bucket"><div class="bucket__head"><b>' + esc(b.name) + '</b><span>' + (b.files || []).length + '</span></div>' +
         ((b.files || []).length
@@ -496,6 +552,8 @@
       '기획은 <code>01_업무자동화목록/기획메모</code>에, 앱 결과물은 <code>04_애플리케이션</code>에 남깁니다. 배포는 확인 없이 공개하지 않고, 기본은 비공개입니다.',
       '<span>이 페이지가 v1 산출물</span><span>GitHub Pages</span>');
 
+    out += areaTaskCard('app');
+
     out += '<section class="card appcard"><div class="card__head"><div><h2>Pickle_Base 워크스페이스 v1</h2><p>첫 번째 앱 — 이 화면</p></div>' + chip('complete') + '</div>' +
       '<div class="appcard__url"><span aria-hidden="true">🔗</span><a href="' + esc(appUrl) + '" target="_blank" rel="noopener">' + esc(appUrl.replace(/^https?:\/\//, '')) + '</a></div>' +
       '<dl class="kv">' +
@@ -533,6 +591,8 @@
     if (fallback) {
       out += '<p class="notice">드라이브에서 습관 목록을 찾지 못해 기본 8개 항목을 표시합니다.</p>';
     }
+
+    out += areaTaskCard('daily');
 
     out += '<section class="card"><div class="card__head"><div><h2>오늘 체크리스트</h2><p>' + esc(todayKey()) + ' (' + weekdayShort(new Date()) + ') · 클릭하면 저장됩니다</p></div>' +
       '<button id="habitReset" class="btn btn--ghost btn--sm" type="button">오늘 초기화</button></div>' +
@@ -633,6 +693,30 @@
     $('#drawer').hidden = false;
     document.body.style.overflow = 'hidden';
   }
+  function openTaskDrawer(no) {
+    var t = taskList().filter(function (x) { return String(x.no) === String(no); })[0];
+    if (!t) return;
+    var doc = state.model && state.model.taskDoc;
+    var rows = [
+      ['분류', t.category || '미분류'],
+      ['상태', t.statusText || ((STATUS[t.status] || STATUS.pending).label)],
+      ['연결 스킬', t.skill],
+      ['결과물 위치', t.output],
+      ['비고', t.note],
+      ['다음 할 일', t.next]
+    ].filter(function (r) { return !!r[1]; });
+
+    $('#drawerBody').innerHTML = '<h2 id="drawerTitle">' + esc(t.title) + '</h2>' +
+      '<div class="dpath">태스크 ' + esc(String(t.no || '—')) + ' · ' + esc(taskSourceLabel()) + '</div>' +
+      '<div class="row row--gap" style="margin-top:12px">' + chip(t.status) + '</div>' +
+      '<div class="dsection"><h3>태스크 정보</h3><dl>' + rows.map(function (r) {
+        return '<div class="drow"><dt>' + esc(r[0]) + '</dt><dd>' + (/^https?:/.test(String(r[1])) ? '<a href="' + esc(r[1]) + '" target="_blank" rel="noopener">열기</a>' : esc(r[1])) + '</dd></div>';
+      }).join('') + '</dl></div>' +
+      (doc ? '<div class="row row--gap" style="margin-top:18px"><a class="btn btn--primary btn--sm" href="' + esc(doc.url) + '" target="_blank" rel="noopener">업무자동화 목록 열기</a></div>' : '') +
+      '<p class="small muted" style="margin-top:14px">태스크 상태는 <code>01_업무자동화목록/업무자동화 목록</code> 문서의 태스크 블록에서 읽습니다.</p>';
+    $('#drawer').hidden = false;
+    document.body.style.overflow = 'hidden';
+  }
   function closeDrawer() {
     $('#drawer').hidden = true;
     document.body.style.overflow = '';
@@ -713,6 +797,9 @@
   function attach() {
     $$('#main [data-item]').forEach(function (el) {
       el.addEventListener('click', function () { openDrawer(el.getAttribute('data-item')); });
+    });
+    $$('#main tr[data-task]').forEach(function (tr) {
+      tr.addEventListener('click', function () { openTaskDrawer(tr.getAttribute('data-task')); });
     });
     $$('#main [data-tab-jump]').forEach(function (el) {
       el.addEventListener('click', function () {

@@ -332,7 +332,11 @@ code{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:.9em;back
 .tablewrap .table--tasks{min-width:900px}
 .table--tasks .taskno{width:30px;color:var(--muted);font-variant-numeric:tabular-nums;font-weight:650}
 .table--tasks .path{max-width:230px}
+.table--tasks tr[data-task]{cursor:pointer}
+.table--tasks tr[data-task]:hover td{background:var(--surface-2)}
+.table--tasks tr[data-task] .table__link{display:block;width:100%}
 .taskcats{display:flex;gap:6px;flex-wrap:wrap;margin:0 0 12px}
+.card[data-area-tasks] .card__head h2{font-size:15.5px}
 
 /* 빈 상태 */
 .empty{
