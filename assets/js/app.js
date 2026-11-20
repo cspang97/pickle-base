@@ -12,7 +12,7 @@
     { key: 'hub', label: '업무자동화', icon: '⌗' },
     { key: 'blog', label: '블로그', icon: '✎' },
     { key: 'research', label: '리서치', icon: '⌕' },
-    { key: 'app', label: '기획·앱', icon: '▣' },
+    { key: 'app', label: '앱', icon: '▣' },
     { key: 'daily', label: '일상·습관', icon: '☑' }
   ];
 
@@ -129,10 +129,33 @@
     return taskMatchesQuery(t);
   }
   function visibleTasks() { return taskList().filter(matchingTask); }
+  /* ---------- 화면 범위(scoped) 태스크 ----------
+     상단 상태 필터 칩은 지금 보고 있는 탭의 태스크만 셉니다.
+     대시보드·업무자동화는 전체 태스크, 영역 탭(블로그·리서치·앱·일상)은 그 영역 분류의 태스크,
+     통합 검색 뷰에서는 검색어에 걸린 태스크 기준입니다. */
+  function scopeArea() {
+    if (state.query.trim()) return '';
+    return AREA_CAT[state.view] ? state.view : '';
+  }
+  function scopeTasks() {
+    var area = scopeArea();
+    return area ? areaTasks(area) : taskList();
+  }
   function taskCount(key) {
-    return taskList().filter(function (t) {
+    return scopeTasks().filter(function (t) {
       return (key === 'all' || t.status === key) && taskMatchesQuery(t);
     }).length;
+  }
+  function scopeTitle() {
+    var area = scopeArea();
+    if (area) return '지금 탭의 분류 ‘' + AREA_CAT[area].label + '’ 태스크 기준';
+    if (state.query.trim()) return '검색어에 걸린 태스크 기준';
+    return '01_업무자동화목록/업무자동화 목록의 태스크 기준';
+  }
+  function scopeLabel() {
+    if (scopeArea()) return '이 영역 태스크';
+    if (state.query.trim()) return '검색 결과 태스크';
+    return '태스크';
   }
   function taskCounts() {
     var c = { all: 0, complete: 0, progress: 0, pending: 0 };
@@ -162,14 +185,15 @@
     return taskList().filter(function (t) { return taskAreaKey(t) === areaKey; });
   }
 
-  function taskCategories() {
+  function taskCategories(list) {
     var out = [];
     var map = {};
-    taskList().forEach(function (t) {
+    (list || taskList()).forEach(function (t) {
       var name = t.category || '미분류';
-      if (!map[name]) { map[name] = { name: name, all: 0, complete: 0, progress: 0, pending: 0 }; out.push(map[name]); }
+      if (!map[name]) { map[name] = { name: name, all: 0, complete: 0, progress: 0, pending: 0, shown: 0 }; out.push(map[name]); }
       map[name].all++;
       if (map[name][t.status] !== undefined) map[name][t.status]++;
+      if (matchingTask(t)) map[name].shown++;
     });
     return out;
   }
@@ -198,9 +222,9 @@
   function renderStatusChips() {
     var box = $('#statusChips');
     var defs = [{ k: 'all', label: '전체' }, { k: 'complete', label: '완료' }, { k: 'progress', label: '진행중' }, { k: 'pending', label: '미정' }];
-    box.innerHTML = '<span class="chips__label" title="01_업무자동화목록/업무자동화 목록의 태스크 기준">태스크</span>' + defs.map(function (d) {
+    box.innerHTML = '<span class="chips__label" title="' + esc(scopeTitle()) + '">' + esc(scopeLabel()) + '</span>' + defs.map(function (d) {
       var n = taskCount(d.k);
-      return '<button class="chip" data-filter="' + d.k + '" aria-pressed="' + (state.filter === d.k) + '" title="태스크 기준 집계">' +
+      return '<button class="chip" data-filter="' + d.k + '" aria-pressed="' + (state.filter === d.k) + '" title="' + esc(scopeTitle()) + '">' +
         d.label + '<span class="chip__count">' + n + '</span></button>';
     }).join('');
   }
@@ -336,12 +360,38 @@
     return '<section class="card" data-area-tasks="' + areaKey + '">' + head + body + '</section>';
   }
 
-  function taskCategoryStrip() {
-    var cats = taskCategories();
+  function taskCategoryStrip(list) {
+    var cats = taskCategories(list);
     if (!cats.length) return '';
-    return '<div class="taskcats">' + cats.map(function (c) {
-      return '<span class="tag">' + esc(c.name) + ' ' + c.all + ' · 완료 ' + c.complete + '</span>';
+    var narrowed = state.filter !== 'all' || !!state.query.trim();
+    var rows = cats.filter(function (c) { return !narrowed || c.shown > 0; });
+    if (!rows.length) return '';
+    return '<div class="taskcats">' + rows.map(function (c) {
+      var head = narrowed ? c.shown + '/' + c.all : String(c.all);
+      return '<span class="tag">' + esc(c.name) + ' ' + head + ' · 완료 ' + c.complete + '</span>';
     }).join('') + '</div>';
+  }
+
+  /* 대시보드의 ‘분류별 태스크’ 카드 — 표는 업무자동화 탭에 두고, 여기서는 분류별 숫자만 봅니다. */
+  function taskCategoryCard() {
+    var list = scopeTasks();
+    var cats = taskCategories(list);
+    var total = list.filter(matchingTask).length;
+    var label = state.filter === 'all' ? '전체' : ((STATUS[state.filter] || {}).label || '');
+    var head = '<div class="card__head"><div><h2>분류별 태스크</h2><p>' + total + '건 · ' + esc(label) +
+      ' · 분류 ' + cats.length + '종 · ' + esc(taskSourceLabel()) + '</p></div>' +
+      '<button class="btn btn--ghost btn--sm" data-tab-jump="hub" type="button">업무자동화 탭에서 표 보기</button></div>';
+    var strip = taskCategoryStrip(list);
+    if (!cats.length) {
+      return '<section class="card" data-task-categories>' + head +
+        emptyInline('등록된 태스크가 없습니다', '업무자동화 목록에 태스크 블록을 적으면 분류별 숫자가 여기에 모입니다.') + '</section>';
+    }
+    if (!strip) {
+      return '<section class="card" data-task-categories>' + head +
+        emptyInline('조건에 맞는 태스크가 없습니다', '상태 필터를 “전체”로 바꾸거나 검색어를 지워 보세요.') + '</section>';
+    }
+    return '<section class="card" data-task-categories>' + head + strip +
+      '<p class="small muted">태스크별 표는 <b>업무자동화</b> 탭에 있습니다. 폴더·파일은 태스크 집계에 포함되지 않습니다.</p></section>';
   }
 
   function taskSourceLabel() {
@@ -368,10 +418,7 @@
       statTile('미정', tc.pending, '건', '정하면 시작되는 태스크') +
       '</div>';
 
-    out += '<section class="card"><div class="card__head"><div><h2>태스크 현황</h2><p>' + visibleTasks().length + '건 · ' +
-      (state.filter === 'all' ? '전체' : (STATUS[state.filter] || {}).label || '') + '</p></div>' +
-      '<span class="small muted">' + esc(taskSourceLabel()) + '</span></div>' +
-      taskCategoryStrip() + taskTable(visibleTasks()) + '</section>';
+    out += taskCategoryCard();
 
     out += '<div class="section-label">스킬 ' + (m.skills || []).length + '종</div>';
     out += '<div class="grid grid--auto">' + (m.skills || []).map(skillCard).join('') + '</div>';
@@ -548,7 +595,7 @@
     var plans = visible(m.items.filter(function (i) { return /기획메모/.test(i.path); }));
     var appItems = visible(itemsOf('app')).filter(function (i) { return i.kind === 'folder' || i.kind === 'file'; });
 
-    var out = pageHead('기획 · 애플리케이션', '기획 문서와 앱 배포 현황',
+    var out = pageHead('04_애플리케이션', '기획 문서와 앱 배포 현황',
       '기획은 <code>01_업무자동화목록/기획메모</code>에, 앱 결과물은 <code>04_애플리케이션</code>에 남깁니다. 배포는 확인 없이 공개하지 않고, 기본은 비공개입니다.',
       '<span>이 페이지가 v1 산출물</span><span>GitHub Pages</span>');
 
