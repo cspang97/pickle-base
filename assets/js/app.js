@@ -402,7 +402,6 @@
 
   function viewDashboard() {
     var m = state.model;
-    var s = m.stats || {};
     var tc = taskCounts();
     var sourceNote = state.source === 'drive'
       ? '드라이브 실시간 · ' + fmtDateTime(m.syncedAt)
@@ -410,13 +409,6 @@
     var out = pageHead('허브 대시보드', '지금 Pickle_Base의 상태',
       '폴더를 열지 않아도 태스크와 스킬의 진행 상태, 최근 작업, 아직 정하지 않은 것이 한 화면에 모입니다. 상태 집계는 폴더·파일이 아니라 <code>업무자동화 목록</code>의 태스크 기준입니다.',
       '<span>데이터 · ' + esc(sourceNote) + '</span><span>태스크 ' + tc.all + '건 · 완료 ' + tc.complete + '</span>');
-
-    out += '<div class="grid grid--stats">' +
-      statTile('전체 태스크', tc.all, '건', '업무자동화 목록 기준 · 폴더 제외') +
-      statTile('완료', tc.complete, '건', '결과물까지 남긴 태스크') +
-      statTile('진행중', tc.progress, '건', '지금 굴러가는 태스크') +
-      statTile('미정', tc.pending, '건', '정하면 시작되는 태스크') +
-      '</div>';
 
     out += taskCategoryCard();
 
@@ -442,12 +434,6 @@
       }).join('') + '</div></section>';
 
     return '<div class="view">' + out + '</div>';
-  }
-
-  function statTile(label, value, unit, foot) {
-    return '<div class="stat"><div class="stat__label">' + esc(label) + '</div>' +
-      '<div class="stat__value">' + esc(String(value)) + '<small>' + esc(unit) + '</small></div>' +
-      '<div class="stat__foot">' + esc(foot) + '</div></div>';
   }
 
   function viewHub() {
@@ -498,13 +484,6 @@
       '<span>발행 ' + (s.published || 0) + '편 · 초안 ' + (s.drafts || 0) + '편</span><span>글자 수 기준 ' + limit + '자</span>');
 
     out += areaTaskCard('blog');
-
-    out += '<div class="grid grid--stats">' +
-      statTile('원고', s.posts || 0, '편', '02_네이버블로그/원고') +
-      statTile('발행', s.published || 0, '편', 'blog.naver.com/cspang97') +
-      statTile('초안', s.drafts || 0, '편', '500자 이내 작성 규칙') +
-      statTile('최장 원고', s.maxChars || 0, '자', limit + '자 기준 · 여유 ' + Math.max(0, limit - (s.maxChars || 0)) + '자') +
-      '</div>';
 
     if (!posts.length) {
       out += '<section class="card">' + emptyInline('조건에 맞는 원고가 없습니다', '검색어나 상태 필터를 바꿔 보세요. 새 원고는 <code>02_네이버블로그/원고</code>에 저장합니다.') + '</section>';
