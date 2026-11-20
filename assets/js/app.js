@@ -199,7 +199,7 @@
     } else if (!live) {
       notice.hidden = false;
       notice.className = 'notice';
-      notice.innerHTML = '프리뷰 모드입니다 — 2026-11-20 기준 Pickle_Base 구조·스킬·첫 글 메타데이터를 담은 오프라인 스냅샷이에요. 실제 드라이브를 읽으려면 <strong>Google 계정 연결</strong>이 필요합니다.';
+      notice.innerHTML = '프리뷰 모드입니다 — 2026-11-20 기준 Pickle_Base의 태스크 6건·스킬 4종·첫 글 메타데이터를 담은 오프라인 스냅샷이에요. 실제 드라이브를 읽으려면 <strong>Google 계정 연결</strong>이 필요합니다.';
       var b = document.createElement('button');
       b.className = 'btn btn--sm';
       b.style.marginLeft = '8px';
@@ -336,7 +336,7 @@
       }).join('') + '</ul>' : '<div class="empty"><span class="empty__icon">✓</span><h3>정해야 할 것이 없습니다</h3><p>문서에서 “아직 정하지 않은 것” 항목을 찾지 못했습니다.</p></div>') +
       '</section></div>';
 
-    out += '<section class="card"><div class="card__head"><div><h2>폴더 구조</h2><p>탑색용입니다 — 태스크 집계에는 포함되지 않습니다</p></div></div>' +
+    out += '<section class="card"><div class="card__head"><div><h2>폴더 구조</h2><p>탐색용입니다 — 태스크 집계에는 포함되지 않습니다</p></div></div>' +
       '<div class="folders">' + (m.areas || []).map(function (a) {
         return '<button class="folder' + (a.hub ? ' folder--hub' : '') + '" data-tab-jump="' + a.key + '" type="button">' +
           '<em>' + esc(a.no) + '</em><b>' + esc(a.name) + '</b><span>' + esc(a.role) + '</span><span>' + esc(a.count || '') + '</span></button>';
