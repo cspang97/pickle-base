@@ -614,8 +614,17 @@
   };
 
   function habitSheetOf() {
-    var hs = state.model && state.model.habitSheet;
+    var m = state.model;
+    var hs = m && m.habitSheet;
     if (hs && hs.status) return hs;
+    /* 드라이브에 연결됐는데 실적 시트 정보가 없으면, 프리뷰 숫자를 보여주지 않고
+       시트를 찾지 못했다고 알립니다(연결된 화면에서 다른 데이터를 섞지 않기). */
+    if (m && m.source === 'drive') {
+      return {
+        status: 'missing', name: '건강습관 일일실적', sheetId: '', url: '', path: '',
+        category: null, items: [], message: '05_일상생활 폴더에서 ‘건강습관 일일실적’ 시트를 찾지 못했습니다.'
+      };
+    }
     return (PREVIEW && PREVIEW.habitSheet) || DEFAULT_HABIT_SHEET;
   }
   function habitCategory(catId) {
