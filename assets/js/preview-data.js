@@ -10,7 +10,7 @@ window.PB_PREVIEW = (function () {
     { key: 'blog', no: '02', name: '네이버블로그', role: '원고 · 이미지', count: '원고 1 · 이미지 1' },
     { key: 'research', no: '03', name: '리서치', role: '자료 · 요약노트 · 출처', count: '폴더 3 · 비어 있음' },
     { key: 'app', no: '04', name: '애플리케이션', role: '코드 · 배포 · 최종산출물', count: '폴더 3' },
-    { key: 'daily', no: '05', name: '일상생활', role: '습관 체크 기록', count: '기록 없음' },
+    { key: 'daily', no: '05', name: '일상생활', role: '습관 체크 · 일일 실적', count: '시트 1 · 기록 2일' },
     { key: 'personal', no: '06', name: '개인', role: '개인 작업 공간', count: '비어 있음' }
   ];
 
@@ -146,10 +146,17 @@ window.PB_PREVIEW = (function () {
     },
 
     {
-      id: 'daily-log', area: 'daily', kind: 'folder', title: '습관 체크 기록', status: 'pending',
-      path: '05_일상생활', updated: '2026-11-20',
-      summary: '날짜별 한 줄 기록을 남기는 곳. 아직 기록이 없습니다.',
-      tags: ['습관', '기록', '폴더']
+      id: 'daily-folder', area: 'daily', kind: 'folder', title: '05_일상생활', status: 'progress',
+      path: '05_일상생활', updated: '2026-11-22',
+      summary: '하위 1개 항목 · 건강습관 일일실적 시트',
+      tags: ['일상', '폴더']
+    },
+    {
+      id: 'habit-sheet', area: 'daily', kind: 'sheet', title: '건강습관 일일실적', status: 'complete', statusLabel: '기록 중',
+      path: '05_일상생활/건강습관 일일실적', updated: '2026-11-22',
+      summary: '2일 기록 · 항목 4개 (통곡물·채단탄·산책·당류)',
+      tags: ['실적', '시트', '습관'],
+      url: 'https://docs.google.com/spreadsheets/d/1M5PbVI6DDaBhl0vBoLhEpmTfQloOyS-nhBVxEg3KjhU/edit'
     },
     {
       id: 'personal', area: 'personal', kind: 'folder', title: '06_개인', status: 'pending',
@@ -225,6 +232,34 @@ window.PB_PREVIEW = (function () {
     categoryMap[name][t.status]++;
   });
 
+  /* 일상·습관 실적 — 실제 시트(05_일상생활/건강습관 일일실적)의 현재 내용과 같은 2일 기록.
+     시트 CSV와 같은 형식이라 앱의 실시간 읽기와 같은 파서를 씁니다. */
+  var habitCsv = [
+    '날짜,요일,통곡물 선택,채단탄 순서,식후 산책,액상과당·단순당 멀리하기,달성 수,메모',
+    '2026-11-21,토,X,X,O,O,2/4,빵 섭취로 통곡물·채단탄 미실천',
+    '2026-11-22,일,X,O,O,O,3/4,햄버거 섭취로 통곡물 미실천'
+  ].join('\n');
+  var habitSheet = (function () {
+    var base = {
+      status: 'missing', name: '건강습관 일일실적', sheetId: '', url: '', path: '05_일상생활/건강습관 일일실적',
+      category: null, items: [], message: '프리뷰에는 실적 시트 스냅샷이 없습니다.'
+    };
+    if (!window.PBHabit) return base;
+    var cat = window.PBHabit.parseSheet(habitCsv, {
+      id: 'health', name: '건강·식습관',
+      sheetId: '1M5PbVI6DDaBhl0vBoLhEpmTfQloOyS-nhBVxEg3KjhU',
+      url: 'https://docs.google.com/spreadsheets/d/1M5PbVI6DDaBhl0vBoLhEpmTfQloOyS-nhBVxEg3KjhU/edit',
+      source: 'preview'
+    });
+    base.status = cat.records.length ? 'ok' : 'empty';
+    base.category = cat;
+    base.items = cat.items;
+    base.sheetId = '1M5PbVI6DDaBhl0vBoLhEpmTfQloOyS-nhBVxEg3KjhU';
+    base.url = 'https://docs.google.com/spreadsheets/d/1M5PbVI6DDaBhl0vBoLhEpmTfQloOyS-nhBVxEg3KjhU/edit';
+    base.message = '';
+    return base;
+  })();
+
   var timeline = [
     { date: '2026-11-20', title: 'Pickle_Base 워크스페이스 v1 배포', desc: '허브 대시보드·영역 탭·통합 검색·드라이브 읽기 연동을 GitHub Pages에 올림.' },
     { date: '2026-11-20', title: '폴더 구조 재정렬 — 허브를 01로', desc: '01_업무자동화목록을 맨 위로, 스킬 4종 문서와 구조 지도·목록 문서 번호 정리.' },
@@ -271,6 +306,7 @@ window.PB_PREVIEW = (function () {
     timeline: timeline,
     pending: pending,
     habits: habits,
+    habitSheet: habitSheet,
     stats: { automation: 3, skillsRun: 1, skillsTotal: 4, posts: 1, published: 1, drafts: 0, maxChars: 320, charLimit: 500, pending: 5, taskAll: taskStats.all, taskComplete: taskStats.complete, taskProgress: taskStats.progress, taskPending: taskStats.pending },
     blog: { limit: 500 }
   };

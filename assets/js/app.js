@@ -26,6 +26,7 @@
     view: 'dashboard',
     query: '',
     filter: 'all',
+    habitCat: '',
     model: PREVIEW,
     source: 'preview',
     token: null,
@@ -35,7 +36,6 @@
   };
 
   var cfg = loadCfg();
-  var habits = loadHabits();
   var tokenExpiry = 0;
   var toastTimer = null;
   /* 주소 기준(해시만 바꿔 씁니다) — GitHub Pages 하위 경로에서도 그대로 동작합니다. */
@@ -62,17 +62,6 @@
   function saveCfg() {
     try { localStorage.setItem(CFG_KEY, JSON.stringify(cfg)); } catch (e) { /* 저장 불가 */ }
   }
-  function loadHabits() {
-    try { return JSON.parse(localStorage.getItem(HABIT_KEY) || '{}') || {}; } catch (e) { return {}; }
-  }
-  function saveHabits() {
-    try { localStorage.setItem(HABIT_KEY, JSON.stringify(habits)); } catch (e) { /* 저장 불가 */ }
-  }
-  function dateKey(d) {
-    var t = d || new Date();
-    return t.getFullYear() + '-' + String(t.getMonth() + 1).padStart(2, '0') + '-' + String(t.getDate()).padStart(2, '0');
-  }
-  function todayKey() { return dateKey(new Date()); }
   function weekdayShort(d) { return ['일', '월', '화', '수', '목', '금', '토'][d.getDay()]; }
   function fmtDateTime(iso) {
     if (!iso) return '';
@@ -218,7 +207,11 @@
     if (key === 'blog') return m.items.filter(function (i) { return i.area === 'blog' && i.kind === 'doc'; }).length;
     if (key === 'research') return m.items.filter(function (i) { return i.area === 'research'; }).length;
     if (key === 'app') return m.items.filter(function (i) { return i.area === 'app'; }).length;
-    if (key === 'daily') return (m.habits || []).length;
+    if (key === 'daily') {
+      var hs = habitSheetOf();
+      if (hs && hs.category && hs.category.items.length) return hs.category.items.length;
+      return (m.habits || []).length;
+    }
     return 0;
   }
   function renderStatusChips() {
@@ -269,7 +262,7 @@
     var main = $('#main');
     if (state.query.trim()) { main.innerHTML = viewSearch(); attach(); return; }
     var map = { dashboard: viewDashboard, hub: viewHub, blog: viewBlog, research: viewResearch, app: viewApp, daily: viewDaily };
-    main.innerHTML = (map[state.view] || viewDashboard)();
+    main.innerHTML = (state.view === 'daily' && state.habitCat) ? viewHabitDetail(state.habitCat) : (map[state.view] || viewDashboard)();
     attach();
   }
 
@@ -285,7 +278,7 @@
 
   function itemRow(item, opts) {
     opts = opts || {};
-    var icon = { doc: '📄', folder: '📁', image: '🖼', app: '▣', file: '📎' }[item.kind] || '📄';
+    var icon = { doc: '📄', folder: '📁', image: '🖼', app: '▣', file: '📎', sheet: '📊' }[item.kind] || '📄';
     var side = opts.showArea ? '<div class="item__side"><span class="tag">' + esc(areaName(item.area)) + '</span></div>'
       : '<div class="item__side">' + (item.updated ? '<span>' + esc(item.updated) + '</span>' : '') + '</div>';
     return '<button class="item" data-item="' + esc(item.id) + '" type="button">' +
@@ -605,66 +598,238 @@
     return '<div class="view">' + out + '</div>';
   }
 
+  /* ================= 일상·습관 (실적 시트) =================
+     일상·습관 탭 = 관리 중인 체크리스트 카테고리 목록.
+     카테고리를 누르면 인사이트와 일 단위 O/X 실적 상세로 들어갑니다.
+     기록은 드라이브의 '05_일상생활/건강습관 일일실적' 시트를 읽기 전용으로 읽습니다. */
+  var DEFAULT_HABIT_SHEET = {
+    status: 'missing', name: '건강습관 일일실적', sheetId: '', url: '', path: '',
+    category: null, items: [], message: '실적 시트 정보를 찾지 못했습니다.'
+  };
+
+  function habitSheetOf() {
+    var hs = state.model && state.model.habitSheet;
+    if (hs && hs.status) return hs;
+    return (PREVIEW && PREVIEW.habitSheet) || DEFAULT_HABIT_SHEET;
+  }
+  function habitCategory(catId) {
+    var hs = habitSheetOf();
+    var cat = hs && hs.category;
+    if (!cat) return null;
+    return String(catId || cat.id) === String(cat.id) ? { sheet: hs, category: cat } : null;
+  }
+  function datePretty(d) {
+    var m = String(d || '').match(/^(\d{4})-(\d{2})-(\d{2})$/);
+    return m ? Number(m[2]) + '월 ' + Number(m[3]) + '일' : String(d || '');
+  }
+  function habitItemShort(name) {
+    var n = String(name || '');
+    if (/과당|단순당|당류/.test(n)) return '당류';
+    if (/통곡물|잡곡|현미/.test(n)) return '통곡물';
+    if (/채소|채단탄|순서/.test(n)) return '채단탄';
+    if (/산책|걷기|운동/.test(n)) return '산책';
+    var cut = n.replace(/\s*(선택|하기|먹기|지키기)$/, '').trim();
+    return cut.length > 8 ? cut.slice(0, 8) + '…' : cut;
+  }
+  function pct(rate) {
+    var n = Number(rate);
+    if (!isFinite(n)) return 0;
+    return Math.max(0, Math.min(100, Math.round(n)));
+  }
+
+  function habitRulesCard() {
+    return '<section class="card"><div class="card__head"><div><h2>기록 방식</h2><p>스킬: 습관 체크 · 시트 한 줄 = 하루</p></div>' + chip('progress') + '</div>' +
+      '<ul class="rulelist">' +
+      '<li>매일 아침 습관 체크에서 그날 항목을 하나씩 확인하고, 결과를 <code>05_일상생활/건강습관 일일실적</code> 시트에 한 줄로 남깁니다.</li>' +
+      '<li>앱은 그 시트를 <b>읽기만</b> 합니다. 여기서 고친 내용이 시트로 되돌아가지는 않습니다.</li>' +
+      '<li>못 지킨 날은 메모에 이유만 한 줄 적습니다 — 그 메모가 인사이트의 근거가 됩니다.</li>' +
+      '</ul></section>';
+  }
+
+  function habitStatusCard(hs) {
+    var title = '실적 시트를 읽지 못했습니다';
+    var tip = '잠시 뒤 <b>동기화</b>를 다시 누르거나 상단의 Google 계정 연결 상태를 확인해 주세요.';
+    if (hs.status === 'missing') {
+      title = '실적 시트가 아직 없습니다';
+      tip = '<code>05_일상생활</code> 폴더에 <code>' + esc(hs.name || '건강습관 일일실적') + '</code> Google Sheet를 만들면 이 화면에 기록이 나타납니다.';
+    }
+    return '<section class="card" data-habit-card data-habit-status="' + esc(hs.status) + '">' +
+      '<div class="card__head"><div><h2>체크리스트 카테고리</h2><p>지금 관리 중인 체크리스트</p></div></div>' +
+      '<div class="empty"><span class="empty__icon">📊</span><h3>' + esc(title) + '</h3>' +
+      '<p>' + esc(hs.message || '') + '</p>' +
+      '<p class="small muted">' + tip + '</p>' +
+      (state.source === 'drive' ? '<div class="row row--gap"><button class="btn btn--sm" type="button" data-habit-sync>동기화 다시 시도</button></div>' : '') +
+      '</div></section>';
+  }
+
+  function habitCategoryCard(hs, cat) {
+    var H = window.PBHabit;
+    var sum = H ? H.summarize(cat) : null;
+    var last = sum && sum.last;
+    var rate = last ? last.rate : 0;
+    var sub = '항목 ' + cat.items.length + '개';
+    if (sum && sum.days) {
+      sub += ' · 기록 ' + sum.days + '일 · 평균 ' + sum.avgRate + '%';
+      if (sum.streak > 1) sub += ' · 연속 ' + sum.streak + '일';
+    } else {
+      sub += ' · 아직 기록 없음';
+    }
+    var foot = last
+      ? '최근 ' + datePretty(last.date) + ' (' + last.weekday + ') · ' + last.done + '/' + last.total
+      : '첫 기록을 기다리는 중';
+    var tags = '';
+    if (sum && sum.days && sum.best) {
+      tags = '<span class="catcard__tags">' +
+        '<span class="tag">잘 지킴 · ' + esc(habitItemShort(sum.best.name)) + '</span>' +
+        (sum.worst && sum.worst.miss ? '<span class="tag">자주 빠짐 · ' + esc(habitItemShort(sum.worst.name)) + '</span>' : '') +
+        '</span>';
+    }
+    var head = '<div class="card__head"><div><h2>체크리스트 카테고리</h2><p>지금 관리 중인 체크리스트 · 카테고리를 누르면 상세</p></div>' +
+      (hs.url ? '<a class="btn btn--ghost btn--sm" href="' + esc(hs.url) + '" target="_blank" rel="noopener">시트 열기</a>' : '') + '</div>';
+
+    return '<section class="card" data-habit-card data-habit-status="' + esc(hs.status) + '">' + head +
+      '<button class="catcard" type="button" data-habit-cat="' + esc(cat.id) + '" aria-label="' + esc(cat.name) + ' 상세 보기">' +
+      '<span class="catcard__mark" aria-hidden="true">🌿</span>' +
+      '<span class="catcard__main">' +
+      '<span class="catcard__title">' + esc(cat.name) + '<span class="tag">매일</span></span>' +
+      '<span class="catcard__sub">' + esc(sub) + '</span>' +
+      '<span class="catcard__meter"><i style="width:' + pct(rate) + '%"></i></span>' +
+      '<span class="catcard__foot">' + esc(foot) + '</span>' +
+      tags +
+      '</span>' +
+      '<span class="catcard__rate"><b>' + pct(rate) + '%</b><span>최근 달성률</span></span>' +
+      '<span class="catcard__go" aria-hidden="true">›</span>' +
+      '</button>' +
+      (sum && sum.days
+        ? '<p class="small muted">상세에서 가장 잘 지키는 항목·자주 빠지는 항목, 메모 패턴과 날짜별 O/X를 봅니다.</p>'
+        : '<p class="small muted">시트는 준비됐고 아직 기록이 없습니다. 상세에서 항목 목록과 인사이트를 먼저 볼 수 있습니다.</p>') +
+      '</section>';
+  }
+
   function viewDaily() {
     var m = state.model;
-    var list = (m.habits && m.habits.length) ? m.habits : PREVIEW.habits;
-    var fallback = !(m.habits && m.habits.length) && state.source === 'drive';
-    var today = habits[todayKey()] || {};
-    var done = list.filter(function (h) { return today[h.id]; }).length;
-    var pct = list.length ? Math.round((done / list.length) * 100) : 0;
+    var hs = habitSheetOf();
+    var cat = hs.category;
+    var H = window.PBHabit;
+    var sum = (H && cat) ? H.summarize(cat) : null;
 
-    var out = pageHead('05_일상생활', '오늘의 습관 체크',
-      '“습관 체크” 한마디면 등록된 8개 항목을 하나씩 확인합니다. 여기서는 직접 체크하고 주간 흐름을 봅니다. 체크는 이 브라우저에 저장됩니다.',
-      '<span>' + esc(weekLabel(new Date())) + '</span><span id="dailyDone">' + done + ' / ' + list.length + ' 완료</span>');
+    var meta = '<span>카테고리 ' + (cat ? 1 : 0) + ' · 항목 ' + (cat ? cat.items.length : 0) + '개</span>';
+    meta += sum && sum.days
+      ? '<span>기록 ' + sum.days + '일 · 평균 ' + sum.avgRate + '%</span>'
+      : '<span>기록 없음</span>';
 
-    if (fallback) {
-      out += '<p class="notice">드라이브에서 습관 목록을 찾지 못해 기본 8개 항목을 표시합니다.</p>';
-    }
+    var out = pageHead('05_일상생활', '체크리스트와 일일 실적',
+      '관리 중인 체크리스트를 고르면 항목별 인사이트와 날짜별 O/X 기록이 열립니다. 기록은 드라이브의 <code>05_일상생활/' +
+      esc(hs.name || '건강습관 일일실적') + '</code> 시트에서 실시간으로 읽습니다.', meta);
 
     out += areaTaskCard('daily');
-
-    out += '<section class="card"><div class="card__head"><div><h2>오늘 체크리스트</h2><p>' + esc(todayKey()) + ' (' + weekdayShort(new Date()) + ') · 클릭하면 저장됩니다</p></div>' +
-      '<button id="habitReset" class="btn btn--ghost btn--sm" type="button">오늘 초기화</button></div>' +
-      '<div class="progressline"><b>' + done + '/' + list.length + '</b><div class="meter"><i style="width:' + pct + '%"></i></div><span class="small muted">' + pct + '%</span></div>' +
-      '<div class="habits" style="margin-top:14px">' + list.map(function (h) {
-        var on = !!today[h.id];
-        return '<label class="habit" data-checked="' + on + '"><input type="checkbox" data-habit="' + esc(h.id) + '"' + (on ? ' checked' : '') + '>' +
-          '<span><span class="habit__text">' + esc(h.name) + '</span>' + (h.note ? '<span class="habit__note">' + esc(h.note) + '</span>' : '') + '</span></label>';
-      }).join('') + '</div></section>';
-
-    out += '<div class="grid grid--2">' +
-      '<section class="card"><div class="card__head"><div><h2>최근 7일</h2><p>저장된 체크 수 / ' + list.length + '</p></div></div>' + weekStrip(list) + '</section>' +
-      '<section class="card"><div class="card__head"><div><h2>기록 규칙</h2><p>스킬: 습관 체크</p></div>' + chip('progress') + '</div>' +
-      '<ul class="rulelist">' +
-      '<li>한 번에 한 항목만 묻는다. 몰아서 묻지 않는다.</li>' +
-      '<li>잔소리하지 않는다. 못 지킨 날은 이유만 한 줄.</li>' +
-      '<li>정한 항목을 임의로 바꾸거나 지우지 않는다.</li>' +
-      '<li>기록 위치는 <code>05_일상생활</code> — 아직 기록 형식과 정기 확인 시각은 미정.</li>' +
-      '</ul></section>' +
-      '</div>';
+    out += cat ? habitCategoryCard(hs, cat) : habitStatusCard(hs);
+    out += habitRulesCard();
 
     var dailyItems = visible(itemsOf('daily'));
     if (dailyItems.length) {
-      out += '<section class="card"><div class="card__head"><div><h2>05_일상생활 폴더</h2><p>날짜별 기록이 쌓이는 곳</p></div></div>' +
+      out += '<section class="card"><div class="card__head"><div><h2>05_일상생활 폴더</h2><p>실적 시트와 날짜별 기록이 쌓이는 곳</p></div></div>' +
         '<div class="stack">' + dailyItems.map(function (i) { return itemRow(i); }).join('') + '</div></section>';
     }
     return '<div class="view">' + out + '</div>';
   }
 
-  function weekLabel(d) { return d.getFullYear() + '. ' + (d.getMonth() + 1) + '. ' + d.getDate() + '. (' + weekdayShort(d) + ')'; }
+  /* 카테고리 상세 — 인사이트(상단) → 항목별 달성률 → 날짜별 O/X 실적 */
+  function viewHabitDetail(catId) {
+    var found = habitCategory(catId);
+    var H = window.PBHabit;
+    if (!found || !H) return viewDaily();
+    var cat = found.category;
+    var hs = found.sheet;
+    var sum = H.summarize(cat);
+    var insights = H.buildInsights(cat);
+    var stats = H.itemStats(cat);
 
-  function weekStrip(list) {
-    var days = [];
-    var now = new Date();
-    for (var i = 6; i >= 0; i--) {
-      var d = new Date(now.getFullYear(), now.getMonth(), now.getDate() - i);
-      var k = dateKey(d);
-      var rec = habits[k] || {};
-      var n = list.filter(function (h) { return rec[h.id]; }).length;
-      days.push('<div class="week__day' + (i === 0 ? ' week__day--today' : '') + (n === 0 ? ' week__day--empty' : '') + '">' +
-        '<b>' + weekdayShort(d) + '</b><span>' + (n ? n : '–') + '</span></div>');
+    var out = '<div class="view" data-habit-detail="' + esc(cat.id) + '">';
+    out += '<div class="detailbar">' +
+      '<button class="btn btn--ghost btn--sm" type="button" data-habit-back>← 일상·습관</button>' +
+      (hs.url ? '<a class="btn btn--ghost btn--sm" href="' + esc(hs.url) + '" target="_blank" rel="noopener">시트 열기</a>' : '') +
+      '</div>';
+
+    out += '<section class="card hero hero--tight"><div>' +
+      '<p class="eyebrow">05_일상생활 · 체크리스트</p><h1>' + esc(cat.name) + '</h1>' +
+      '<p class="lede">항목 ' + cat.items.length + '개 · 기록 ' + sum.days + '일 · 평균 달성률 ' + sum.avgRate + '%' +
+      (sum.streak ? ' · 연속 기록 ' + sum.streak + '일' : '') + '. 아래 인사이트는 쌓인 기록에서 계산한 값입니다.</p></div>' +
+      '<div class="hero__meta"><span>최근 ' + (sum.last ? datePretty(sum.last.date) + ' (' + sum.last.weekday + ') ' + sum.last.done + '/' + sum.last.total : '기록 없음') + '</span>' +
+      '<span>' + (state.source === 'drive' ? '시트 실시간' : '프리뷰 스냅샷') + '</span></div></section>';
+
+    out += '<section class="card insight" data-habit-insights><div class="card__head"><div><h2>인사이트</h2><p>잘 지키는 항목 · 빠지는 항목 · 메모 패턴 · 다음 실천 팁</p></div>' +
+      (sum.days ? '<span class="tag">기록 ' + sum.days + '일 기준</span>' : '') + '</div>' +
+      '<ul class="insight__list">' + insights.map(function (n) {
+        return '<li class="insight__row insight__row--' + esc(n.tone || 'info') + '" data-insight="' + esc(n.kind) + '">' +
+          '<span class="insight__dot" aria-hidden="true"></span>' +
+          '<span class="insight__body"><b>' + esc(n.title) + '</b><span>' + esc(n.text) + '</span></span></li>';
+      }).join('') + '</ul></section>';
+
+    out += '<section class="card" data-habit-rates><div class="card__head"><div><h2>항목별 달성률</h2><p>O 일수 / 기록한 일수 · 최근 ' + sum.days + '일</p></div></div>' +
+      (stats.length
+        ? '<ul class="rates">' + stats.map(function (s) {
+            return '<li class="rate" data-rate="' + esc(s.key) + '">' +
+              '<span class="rate__name">' + esc(s.name) + '</span>' +
+              '<span class="rate__meter"><i style="width:' + pct(s.rate) + '%"></i></span>' +
+              '<span class="rate__num">' + pct(s.rate) + '%<em>' + s.hit + '/' + s.counted + '</em></span></li>';
+          }).join('') + '</ul>'
+        : emptyInline('항목을 찾지 못했습니다', '시트 첫 줄에 항목 이름을 넣어 주세요.')) +
+      '<p class="small muted">가장 잘 지키는 항목 <b>' + esc(sum.best ? sum.best.name : '—') + '</b> · 가장 자주 빠지는 항목 <b>' + esc(sum.worst ? sum.worst.name : '—') + '</b></p>' +
+      '</section>';
+
+    out += '<section class="card" data-habit-records><div class="card__head"><div><h2>일 단위 실적</h2><p>' +
+      (sum.days ? '최신순 ' + sum.days + '일 · O/X와 메모' : '아직 기록이 없습니다') + '</p></div>' +
+      '<span class="tag">' + esc(hs.name || '건강습관 일일실적') + '</span></div>' +
+      (sum.days
+        ? '<ol class="days">' + cat.records.map(function (r) {
+            var marks = cat.items.map(function (it, idx) {
+              var v = r.marks[idx];
+              var cls = v === true ? 'on' : (v === false ? 'off' : 'none');
+              return '<span class="mark mark--' + cls + '"><i>' + (v === true ? 'O' : (v === false ? 'X' : '–')) + '</i>' + esc(habitItemShort(it.name)) + '</span>';
+            }).join('');
+            return '<li class="day" data-day="' + esc(r.date) + '">' +
+              '<div class="day__head"><b>' + datePretty(r.date) + '</b><span class="day__week">(' + esc(r.weekday) + ')</span>' +
+              '<span class="day__sum">' + r.done + '/' + r.total + '</span></div>' +
+              '<div class="day__marks">' + marks + '</div>' +
+              (r.memo ? '<p class="day__memo">' + esc(r.memo) + '</p>' : '') +
+              '</li>';
+          }).join('') + '</ol>'
+        : '<div class="empty"><span class="empty__icon">🗓</span><h3>아직 기록이 없습니다</h3>' +
+          '<p>시트에 날짜별 O/X를 한 줄씩 적으면 최신순으로 여기에 쌓입니다.</p></div>') +
+      '</section>';
+
+    out += '<section class="card"><div class="card__head"><div><h2>기록 출처</h2><p>읽기 전용</p></div></div>' +
+      '<dl class="kv">' +
+      '<dt>시트</dt><dd>' + (hs.url ? '<a href="' + esc(hs.url) + '" target="_blank" rel="noopener">' + esc(hs.name || '건강습관 일일실적') + '</a>' : esc(hs.name || '건강습관 일일실적')) + '</dd>' +
+      '<dt>경로</dt><dd>' + esc(hs.path || '05_일상생활/' + (hs.name || '건강습관 일일실적')) + '</dd>' +
+      '<dt>항목</dt><dd>' + cat.items.map(function (it) { return esc(it.name); }).join(' · ') + '</dd>' +
+      '<dt>기록</dt><dd>' + sum.days + '일 (O ' + sum.totalDone + ' / 전체 ' + sum.totalCount + ')</dd>' +
+      '</dl>' +
+      '<p class="small muted">앱은 <code>drive.readonly</code> 권한으로 시트를 CSV로 내려받아 읽습니다. 앱에서 기록을 쓰지는 않습니다.</p>' +
+      '</section>';
+
+    out += '</div>';
+    return out;
+  }
+
+  function openHabit(id) {
+    if (!habitCategory(id)) return false;
+    state.habitCat = String(id);
+    render();
+    pushRoute('daily', { kind: 'habit', id: String(id) });
+    scrollTop();
+    return true;
+  }
+
+  function backToDaily() {
+    state.habitCat = '';
+    render();
+    var s = window.history.state;
+    if (s && s.pb && s.overlay && s.overlay.kind === 'habit') {
+      try { window.history.back(); return; } catch (e) { /* 아래로 */ }
     }
-    return '<div class="week">' + days.join('') + '</div>';
+    replaceRoute('daily', null);
   }
 
   function viewSearch() {
@@ -914,7 +1079,7 @@
     var parts = raw.split('/');
     var view = validView(parts[0]) ? parts[0] : 'dashboard';
     var overlay = null;
-    if (parts[2] && (parts[1] === 'item' || parts[1] === 'task' || parts[1] === 'modal')) {
+    if (parts[2] && (parts[1] === 'item' || parts[1] === 'task' || parts[1] === 'modal' || parts[1] === 'habit')) {
       overlay = { kind: parts[1], id: decodeURIComponent(parts.slice(2).join('/')) };
     }
     return { view: view, overlay: overlay };
@@ -943,6 +1108,7 @@
     if (!validView(key)) return;
     state.view = key;
     state.query = '';
+    state.habitCat = '';
     var si = $('#search');
     if (si) si.value = '';
     closeDrawerRaw();
@@ -963,13 +1129,17 @@
     if (si) si.value = '';
     closeDrawerRaw();
     closeModalRaw();
-    render();
     var o = r.overlay;
+    var wantHabit = (o && o.kind === 'habit' && habitCategory(o.id)) ? String(o.id) : '';
+    state.habitCat = wantHabit;
+    render();
     var opened = true;
-    if (o && o.kind === 'task') opened = openTaskDrawer(o.id, { history: false });
+    if (wantHabit) opened = true;
+    else if (o && o.kind === 'task') opened = openTaskDrawer(o.id, { history: false });
     else if (o && o.kind === 'item') opened = openDrawer(o.id, { history: false });
     else if (o && o.kind === 'modal') opened = openSettings({ history: false });
     if (!opened) replaceRoute(state.view, null);
+    if (o && o.kind === 'habit' && !wantHabit) replaceRoute(state.view, null);
     if (changed) scrollTop();
   }
   function currentRoute() {
@@ -989,36 +1159,13 @@
     $$('#main [data-tab-jump]').forEach(function (el) {
       el.addEventListener('click', function () { goTab(el.getAttribute('data-tab-jump')); });
     });
-    var reset = $('#habitReset');
-    if (reset) reset.addEventListener('click', function () {
-      delete habits[todayKey()];
-      saveHabits();
-      render();
-      toast('오늘 체크를 초기화했습니다');
+    $$('#main [data-habit-cat]').forEach(function (el) {
+      el.addEventListener('click', function () { openHabit(el.getAttribute('data-habit-cat')); });
     });
-    $$('#main [data-habit]').forEach(function (input) {
-      input.addEventListener('change', function () {
-        var k = todayKey();
-        habits[k] = habits[k] || {};
-        if (input.checked) habits[k][input.getAttribute('data-habit')] = true;
-        else delete habits[k][input.getAttribute('data-habit')];
-        saveHabits();
-        var label = input.closest('.habit');
-        if (label) label.setAttribute('data-checked', input.checked ? 'true' : 'false');
-        var list = (state.model.habits && state.model.habits.length) ? state.model.habits : PREVIEW.habits;
-        var today = habits[k] || {};
-        var done = list.filter(function (h) { return today[h.id]; }).length;
-        var pct = list.length ? Math.round(done / list.length * 100) : 0;
-        var line = $('.progressline');
-        if (line) {
-          line.querySelector('b').textContent = done + '/' + list.length;
-          line.querySelector('.meter i').style.width = pct + '%';
-          line.querySelector('.small').textContent = pct + '%';
-        }
-        var heroDone = $('#dailyDone');
-        if (heroDone) heroDone.textContent = done + ' / ' + list.length + ' 완료';
-      });
-    });
+    var habitBack = $('#main [data-habit-back]');
+    if (habitBack) habitBack.addEventListener('click', backToDaily);
+    var habitSync = $('#main [data-habit-sync]');
+    if (habitSync) habitSync.addEventListener('click', function () { doSync('동기화'); });
   }
 
   function boot() {
@@ -1142,8 +1289,11 @@
     // 모바일 뒤로가기 파일이 앱 안에서 먼저 움직이도록 하는 출발점입니다.
     var bootRoute = routeFromHash();
     if (validView(bootRoute.view)) state.view = bootRoute.view;
+    if (bootRoute.overlay && bootRoute.overlay.kind === 'habit') {
+      state.habitCat = habitCategory(bootRoute.overlay.id) ? String(bootRoute.overlay.id) : '';
+    }
     replaceRoute(state.view, null);
-    if (bootRoute.overlay) pushRoute(state.view, bootRoute.overlay);
+    if (bootRoute.overlay && (bootRoute.overlay.kind !== 'habit' || state.habitCat)) pushRoute(state.view, bootRoute.overlay);
 
     // 저장된 구글 로그인이 살아 있으면 다시 묻지 않고 이어서 읽습니다.
     var resumed = restoreToken();
@@ -1151,11 +1301,10 @@
     render();
 
     if (bootRoute.overlay) {
-      var opened = bootRoute.overlay.kind === 'task'
-        ? openTaskDrawer(bootRoute.overlay.id, { history: false })
-        : bootRoute.overlay.kind === 'item'
-          ? openDrawer(bootRoute.overlay.id, { history: false })
-          : true;
+      var opened = true;
+      if (bootRoute.overlay.kind === 'habit') opened = !!state.habitCat;
+      else if (bootRoute.overlay.kind === 'task') opened = openTaskDrawer(bootRoute.overlay.id, { history: false });
+      else if (bootRoute.overlay.kind === 'item') opened = openDrawer(bootRoute.overlay.id, { history: false });
       if (!opened) replaceRoute(state.view, null);
     }
 

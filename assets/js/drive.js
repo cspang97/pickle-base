@@ -8,6 +8,9 @@ window.PBDrive = (function () {
   var API = 'https://www.googleapis.com/drive/v3/';
   var FOLDER = 'application/vnd.google-apps.folder';
   var DOC = 'application/vnd.google-apps.document';
+  var SHEET = 'application/vnd.google-apps.spreadsheet';
+  var HABIT_SHEET_NAME = '건강습관 일일실적';
+  var HABIT_FOLDER_NAME = '05_일상생활';
   var GIS_SRC = 'https://accounts.google.com/gsi/client';
   /* 액세스 토큰 보관 위치 — 새로고침·뒤로가기로 페이지가 다시 그려져도
      로그인이 살아 있도록 이 브라우저(localStorage)에만 둡니다.
@@ -188,6 +191,25 @@ window.PBDrive = (function () {
       if (!r.ok) return null;
       return r.text().then(normalizeExport);
     }).catch(function () { return null; });
+  }
+
+  /* 일상·습관 실적 시트 — Google Sheet를 CSV로 내보내 그대로 읽습니다.
+     따옴표·쉼표·줄바꿈이 든 메모도 PBHabit.parseCsv가 안전하게 나눕니다. */
+  function exportCsv(id, token) {
+    var url = API + 'files/' + encodeURIComponent(id) + '/export?mimeType=text%2Fcsv';
+    return fetch(url, { headers: { Authorization: 'Bearer ' + token } }).then(function (r) {
+      if (!r.ok) return { ok: false, status: r.status, text: '' };
+      return r.text().then(function (t) { return { ok: true, status: r.status, text: t }; });
+    }).catch(function () { return { ok: false, status: 0, text: '' }; });
+  }
+
+  /* Pickle_Base 안에서 실적 시트를 찾습니다 — 05_일상생활 안의 같은 이름을 먼저,
+     없으면 이름이 같은 시트, 그다음 05_일상생활 안의 아무 스프레드시트. */
+  function findHabitSheet(flat) {
+    var sheets = (flat || []).filter(function (f) { return f.mimeType === SHEET; });
+    var inDaily = sheets.filter(function (f) { return f.path.indexOf(HABIT_FOLDER_NAME + '/') === 0; });
+    var byName = function (f) { return f.name === HABIT_SHEET_NAME; };
+    return inDaily.filter(byName)[0] || sheets.filter(byName)[0] || inDaily[0] || null;
   }
 
   /* text/plain 내보내기는 BOM·CRLF를 붙이고, 목록 문단을 "* "로 그립니다.
@@ -382,7 +404,20 @@ window.PBDrive = (function () {
             if (t === null) problems.push('문서 본문을 읽지 못했습니다: ' + d.name);
           });
         }).then(function () {
-          return buildModel({ base: base, user: user, flat: flat, texts: texts, problems: problems });
+          var sheetFile = findHabitSheet(flat);
+          if (!sheetFile) return { file: null, csv: null, error: false };
+          return exportCsv(sheetFile.id, token).then(function (res) {
+            if (!res || !res.ok) {
+              problems.push('실적 시트를 읽지 못했습니다: ' + sheetFile.name);
+              return { file: sheetFile, csv: null, error: true };
+            }
+            return { file: sheetFile, csv: res.text, error: false };
+          });
+        }).then(function (habit) {
+          return buildModel({
+            base: base, user: user, flat: flat, texts: texts, problems: problems,
+            habitFile: habit.file, habitCsv: habit.csv, habitError: habit.error
+          });
         });
       });
     });
@@ -392,6 +427,7 @@ window.PBDrive = (function () {
     var flat = ctx.flat;
     var texts = ctx.texts;
     var problems = ctx.problems;
+    var habitSheet = buildHabitSheet(ctx.habitFile, ctx.habitCsv, ctx.habitError);
 
     var areas = [];
     var areaMeta = {
@@ -422,14 +458,16 @@ window.PBDrive = (function () {
       var item = {
         id: f.id,
         area: key,
-        kind: isFolder ? 'folder' : (f.mimeType === DOC ? 'doc' : (f.mimeType.indexOf('image/') === 0 ? 'image' : 'file')),
+        kind: isFolder ? 'folder' : (f.mimeType === DOC ? 'doc' : (f.mimeType === SHEET ? 'sheet' : (f.mimeType.indexOf('image/') === 0 ? 'image' : 'file'))),
         title: f.name,
         path: f.path,
         status: status,
         updated: fmtDate(f.modifiedTime),
         summary: isFolder
           ? ((childrenCount[f.path] || 0) ? '하위 ' + childrenCount[f.path] + '개 항목' : '비어 있음')
-          : firstLine(bodyText(text, f.name)) || mimeLabel(f.mimeType),
+          : (f.mimeType === SHEET && habitSheet.category
+            ? habitSheet.category.records.length + '일 기록 · 항목 ' + habitSheet.category.items.length + '개'
+            : (firstLine(bodyText(text, f.name)) || mimeLabel(f.mimeType))),
         excerpt: text ? bodyText(text, f.name).slice(0, 900) : '',
         tags: [areaMeta[key].name, isFolder ? '폴더' : '문서'],
         url: f.webViewLink || ('https://drive.google.com/file/d/' + f.id + '/view'),
@@ -575,6 +613,7 @@ window.PBDrive = (function () {
       timeline: timeline,
       pending: pending,
       habits: habits,
+      habitSheet: habitSheet,
       research: { buckets: researchBuckets, topics: topics },
       stats: {
         automation: taskStats.all,
@@ -596,6 +635,45 @@ window.PBDrive = (function () {
     };
   }
 
+  /* 일상·습관 실적 시트 상태 — 카테고리(항목·기록)와 읽기 결과를 함께 담습니다.
+     ok: 기록 있음 / empty: 시트는 있지만 기록 없음 / missing: 시트 없음 / error: 읽기 실패 */
+  function buildHabitSheet(file, csv, error) {
+    var out = {
+      status: 'missing', sheetId: '', url: '', path: '', name: HABIT_SHEET_NAME,
+      category: null, message: '', items: []
+    };
+    if (!file) {
+      out.message = '05_일상생활 폴더에서 ‘' + HABIT_SHEET_NAME + '’ 시트를 찾지 못했습니다.';
+      return out;
+    }
+    out.sheetId = file.id;
+    out.url = file.webViewLink || ('https://docs.google.com/spreadsheets/d/' + file.id + '/edit');
+    out.path = file.path || '';
+    if (error || csv == null) {
+      out.status = 'error';
+      out.message = '실적 시트를 읽지 못했습니다. 동기화를 다시 시도해 주세요.';
+      return out;
+    }
+    var parser = (typeof window !== 'undefined' && window.PBHabit) ? window.PBHabit : null;
+    if (!parser) {
+      out.status = 'error';
+      out.message = '실적 시트를 해석할 수 없습니다(스크립트를 불러오지 못했습니다).';
+      return out;
+    }
+    var cat = parser.parseSheet(csv, {
+      id: 'health', name: '건강·식습관', sheetId: file.id, url: out.url, source: 'drive'
+    });
+    out.category = cat;
+    out.items = cat.items;
+    if (!cat.records.length) {
+      out.status = 'empty';
+      out.message = '시트에 아직 기록이 없습니다. 날짜별 O/X를 한 줄씩 적으면 여기에 쌓입니다.';
+    } else {
+      out.status = 'ok';
+    }
+    return out;
+  }
+
   function firstLine(s) {
     var line = String(s || '').split('\n').filter(function (l) { return l.trim(); })[0] || '';
     return line.length > 140 ? line.slice(0, 140) + '…' : line;
@@ -603,6 +681,7 @@ window.PBDrive = (function () {
 
   function mimeLabel(m) {
     if (m === DOC) return 'Google 문서';
+    if (m === SHEET) return 'Google 스프레드시트';
     if (m === FOLDER) return '폴더';
     if (m.indexOf('image/') === 0) return '이미지';
     if (m === 'application/pdf') return 'PDF';
