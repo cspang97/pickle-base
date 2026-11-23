@@ -575,3 +575,4 @@ code{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:.9em;back
 /* 한국어 줄바꿈: 단어 중간에서 끊기지 않게 (새 일상·습관 영역) */
 .catcard__sub,.catcard__foot,.catcard__title,.insight__body b,.insight__body span,
 .day__head,.day__memo,.rate__name,.tag,.hero__meta span,.card__head p,.empty p{word-break:keep-all}
+.card__head .tag{white-space:nowrap}
