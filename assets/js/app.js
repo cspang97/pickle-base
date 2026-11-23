@@ -240,7 +240,7 @@
     if ($('#btnDisconnect')) $('#btnDisconnect').hidden = !state.token;
     $('#footerSource').textContent = live
       ? '드라이브 실시간 · ' + (state.connectedEmail || '내 계정') + (state.model.syncedAt ? ' · ' + fmtDateTime(state.model.syncedAt) : '')
-      : '프리뷰 데이터 · 2026-11-22 스냅샷';
+      : '프리뷰 데이터 · 2026-11-23 스냅샷';
     var notice = $('#notice');
     if (state.error) {
       notice.hidden = false;
@@ -410,7 +410,7 @@
     var tc = taskCounts();
     var sourceNote = state.source === 'drive'
       ? '드라이브 실시간 · ' + fmtDateTime(m.syncedAt)
-      : '프리뷰 스냅샷 · 2026-11-20';
+      : '프리뷰 스냅샷 · 2026-11-23';
     var out = pageHead('허브 대시보드', '지금 Pickle_Base의 상태',
       '폴더를 열지 않아도 태스크와 스킬의 진행 상태, 최근 작업, 아직 정하지 않은 것이 한 화면에 모입니다. 상태 집계는 폴더·파일이 아니라 <code>업무자동화 목록</code>의 태스크 기준입니다.',
       '<span>데이터 · ' + esc(sourceNote) + '</span><span>태스크 ' + tc.all + '건 · 완료 ' + tc.complete + '</span>');
@@ -585,7 +585,7 @@
     var leads = latest.insights.slice(0, 2).map(function (n) {
       return '<span class="rcard__lead">· <b>' + esc(n.title) + '</b>' + (n.text ? ' — ' + esc(shorten(n.text, 64)) : '') + '</span>';
     }).join('');
-    var sub = '최근 업데이트 ' + esc(latest.date || '—') + ' · 누적 ' + rr.count + '회차 · 항목 ' + rr.itemCount + '건';
+    var sub = '최근 업데이트 ' + esc(latest.date || '—') + ' · 항목 ' + rr.itemCount + '건 · 출처 ' + (latest.sources || []).length + '건';
     var head = '<div class="card__head"><div><h2>리서치 주제</h2><p>요약노트에 쌓인 회차 · 카드를 누르면 상세</p></div>' +
       '<a class="btn btn--ghost btn--sm" href="' + esc(rr.url) + '" target="_blank" rel="noopener">문서 열기</a></div>';
     return '<section class="card" data-research-card data-research-status="ok">' + head +
@@ -595,7 +595,7 @@
       '<span class="catcard__title">' + esc(RESEARCH_TOPIC.title) + '<span class="tag">누적 ' + rr.count + '회차</span></span>' +
       '<span class="catcard__sub">' + sub + '</span>' +
       (leads ? '<span class="rcard__leads">' + leads + '</span>' : '') +
-      '<span class="catcard__foot">' + esc(RESEARCH_TOPIC.vendors) + ' · 출처 ' + (latest.sources || []).length + '건</span>' +
+      '<span class="catcard__foot">' + esc(RESEARCH_TOPIC.vendors) + '</span>' +
       '</span>' +
       '<span class="catcard__rate"><b>' + rr.count + '</b><span>누적 회차</span></span>' +
       '<span class="catcard__go" aria-hidden="true">›</span>' +
