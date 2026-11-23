@@ -249,7 +249,7 @@
     } else if (!live) {
       notice.hidden = false;
       notice.className = 'notice';
-      notice.innerHTML = '프리뷰 모드입니다 — 2026-11-23 기준 Pickle_Base의 태스크 3건·스킬 4종·첫 글 메타데이터·건강습관 실적 2일·4대 AI 리서치 1회차를 담은 오프라인 스냅샷이에요. 실제 드라이브를 읽으려면 <strong>Google 계정 연결</strong>이 필요합니다.';
+      notice.innerHTML = '<span class="notice__text">프리뷰 모드입니다 — 2026-11-23 기준 Pickle_Base의 태스크 3건·스킬 4종·첫 글 메타데이터·건강습관 실적 2일·4대 AI 리서치 1회차를 담은 오프라인 스냅샷이에요. 실제 드라이브를 읽으려면 <strong>Google 계정 연결</strong>이 필요합니다.</span>';
       var b = document.createElement('button');
       b.className = 'btn btn--sm';
       b.style.marginLeft = '8px';
