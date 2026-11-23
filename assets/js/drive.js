@@ -11,6 +11,9 @@ window.PBDrive = (function () {
   var SHEET = 'application/vnd.google-apps.spreadsheet';
   var HABIT_SHEET_NAME = '건강습관 일일실적';
   var HABIT_FOLDER_NAME = '05_일상생활';
+  /* 리서치 요약노트: 03_리서치/요약노트 안의 같은 이름 문서를 회차별로 읽습니다. */
+  var RESEARCH_DOC_NAME = '4대 AI 신규 기능 리서치';
+  var RESEARCH_FOLDER_NAME = '03_리서치/요약노트';
   var GIS_SRC = 'https://accounts.google.com/gsi/client';
   /* 액세스 토큰 보관 위치 — 새로고침·뒤로가기로 페이지가 다시 그려져도
      로그인이 살아 있도록 이 브라우저(localStorage)에만 둡니다.
@@ -205,6 +208,13 @@ window.PBDrive = (function () {
 
   /* Pickle_Base 안에서 실적 시트를 찾습니다 — 05_일상생활 안의 같은 이름을 먼저,
      없으면 이름이 같은 시트, 그다음 05_일상생활 안의 아무 스프레드시트. */
+  /* 리서치 요약노트 문서 — 03_리서치/요약노트 안의 같은 이름을 먼저, 없으면 이름이 같은 문서. */
+  function findResearchDoc(flat) {
+    var docs = (flat || []).filter(function (f) { return f.mimeType === DOC && f.name === RESEARCH_DOC_NAME; });
+    var inNotes = docs.filter(function (f) { return f.path.indexOf(RESEARCH_FOLDER_NAME + '/') === 0; });
+    return inNotes[0] || docs[0] || null;
+  }
+
   function findHabitSheet(flat) {
     var sheets = (flat || []).filter(function (f) { return f.mimeType === SHEET; });
     var inDaily = sheets.filter(function (f) { return f.path.indexOf(HABIT_FOLDER_NAME + '/') === 0; });
@@ -398,10 +408,11 @@ window.PBDrive = (function () {
       return walk(base.id, '', 0, token, flat).then(function () {
         var docs = flat.filter(function (f) { return f.mimeType === DOC; });
         var texts = {};
+        var textFailed = {};
         return pool(docs, 4, function (d) {
           return exportText(d.id, token).then(function (t) {
             texts[d.id] = t;
-            if (t === null) problems.push('문서 본문을 읽지 못했습니다: ' + d.name);
+            if (t === null) { textFailed[d.id] = true; problems.push('문서 본문을 읽지 못했습니다: ' + d.name); }
           });
         }).then(function () {
           var sheetFile = findHabitSheet(flat);
@@ -415,7 +426,7 @@ window.PBDrive = (function () {
           });
         }).then(function (habit) {
           return buildModel({
-            base: base, user: user, flat: flat, texts: texts, problems: problems,
+            base: base, user: user, flat: flat, texts: texts, textFailed: textFailed, problems: problems,
             habitFile: habit.file, habitCsv: habit.csv, habitError: habit.error
           });
         });
@@ -428,6 +439,12 @@ window.PBDrive = (function () {
     var texts = ctx.texts;
     var problems = ctx.problems;
     var habitSheet = buildHabitSheet(ctx.habitFile, ctx.habitCsv, ctx.habitError);
+    var researchDoc = findResearchDoc(flat);
+    var researchReport = buildResearchReport(
+      researchDoc,
+      researchDoc ? texts[researchDoc.id] : null,
+      researchDoc ? !!ctx.textFailed[researchDoc.id] : false
+    );
 
     var areas = [];
     var areaMeta = {
@@ -614,6 +631,7 @@ window.PBDrive = (function () {
       pending: pending,
       habits: habits,
       habitSheet: habitSheet,
+      researchReport: researchReport,
       research: { buckets: researchBuckets, topics: topics },
       stats: {
         automation: taskStats.all,
@@ -628,6 +646,8 @@ window.PBDrive = (function () {
         drafts: posts.length - published.length,
         maxChars: maxChars,
         charLimit: 500,
+        researchRounds: researchReport.count,
+        researchItems: researchReport.itemCount,
         pending: pending.length
       },
       blog: { limit: 500 },
@@ -668,6 +688,46 @@ window.PBDrive = (function () {
     if (!cat.records.length) {
       out.status = 'empty';
       out.message = '시트에 아직 기록이 없습니다. 날짜별 O/X를 한 줄씩 적으면 여기에 쌓입니다.';
+    } else {
+      out.status = 'ok';
+    }
+    return out;
+  }
+
+  /* 리서치 요약노트 상태 — 회차(rounds)와 읽기 결과를 함께 담습니다.
+     ok: 회차 있음 / empty: 문서는 있지만 회차 없음 / missing: 문서 없음 / error: 읽기 실패 */
+  function buildResearchReport(file, text, failed) {
+    var out = {
+      status: 'missing', name: RESEARCH_DOC_NAME, docId: '', url: '', path: '',
+      rounds: [], latest: null, count: 0, itemCount: 0, insightCount: 0, message: ''
+    };
+    if (!file) {
+      out.message = RESEARCH_FOLDER_NAME + '에서 ‘' + RESEARCH_DOC_NAME + '’ 문서를 찾지 못했습니다.';
+      return out;
+    }
+    out.docId = file.id;
+    out.url = file.webViewLink || ('https://docs.google.com/document/d/' + file.id + '/edit');
+    out.path = file.path || '';
+    if (failed || text == null) {
+      out.status = 'error';
+      out.message = '리서치 문서를 읽지 못했습니다. 동기화를 다시 시도해 주세요.';
+      return out;
+    }
+    var parser = (typeof window !== 'undefined' && window.PBResearch) ? window.PBResearch : null;
+    if (!parser) {
+      out.status = 'error';
+      out.message = '리서치 문서를 해석할 수 없습니다(스크립트를 불러오지 못했습니다).';
+      return out;
+    }
+    var parsed = parser.parseReport(text);
+    out.rounds = parsed.rounds;
+    out.latest = parsed.latest;
+    out.count = parsed.count;
+    out.itemCount = parsed.itemCount;
+    out.insightCount = parsed.insightCount;
+    if (!parsed.count) {
+      out.status = 'empty';
+      out.message = '문서는 있지만 아직 회차 내용이 없습니다. “## 1회차 · YYYY-MM-DD” 형식으로 적으면 여기에 쌓입니다.';
     } else {
       out.status = 'ok';
     }

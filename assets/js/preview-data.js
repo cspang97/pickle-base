@@ -4,11 +4,15 @@
 window.PB_PREVIEW = (function () {
   var DOC = 'https://docs.google.com/document/d/';
   var FILE = 'https://drive.google.com/file/d/';
+  var RESEARCH_DOC_ID = '1A425WHWYkF6hy9xZn9sIe8qMLdmtYnsEDgp8lix9cns';
+  /* 03_리서치/요약노트/4대 AI 신규 기능 리서치 — 2026-11-23 1회차 문서 본문 스냅샷.
+     실제 드라이브 문서와 같은 text/plain 내보내기 형식이라 같은 파서(PBResearch)로 읽습니다. */
+  var RESEARCH_TEXT = "4대 AI 신규 기능 리서치\n\n\n2026년 10~11월 공식 발표를 기준으로 Claude·ChatGPT·Gemini·Grok의 신규 기능과 방찬석 님 관점의 인사이트를 회차별로 쌓는 노트입니다.\n작성 규칙: 회차는 \"## N회차 · YYYY-MM-DD\", 묶음은 \"### 핵심 인사이트\"·\"### Claude\"·\"### ChatGPT\"·\"### Gemini\"·\"### Grok\"·\"### 출처\"로 적습니다. 항목은 \"- 날짜 · 이름 — 설명 | 원문 URL\" 형식이고, 발표되지 않은 내용은 적지 않습니다.\n\n\n## 1회차 · 2026-11-23\n\n\n### 핵심 인사이트\n\n\n- 에이전트의 결과물이 문서·시트·페이지로 — 네 곳 모두 대화창 밖 결과물(Claude Sheets·Data, ChatGPT Space, Grok Bot Pages, Gemini Notebook 사이트)을 에이전트가 직접 만들고 사람은 승인·수정만 하는 구조로 이동했습니다. Pickle_Base의 \"스킬 → 결과물 → 다음 할 일\" 구조와 같은 방향이라, 태스크 블록에 \"승인 수준\" 한 줄만 더하면 지금 체계로 받아들일 수 있습니다.\n- 지표는 '인증된 정의' 하나로 — Claude Data의 certified queries는 같은 지표를 서로 다른 쿼리로 계산해 대시보드가 어긋나는 문제를 막습니다. 안전·생산성 지표도 \"정의 1개 + 인증 표시\"로 관리하면 보고서마다 숫자가 달라지는 일을 줄일 수 있습니다.\n- 100만 토큰·플랫 가격이 실무선 — Gemini 4 Hydrogen은 100만 토큰 전 구간 단일 가격(입력 $1.50·출력 $7.50/백만), 출력도 최대 100만 토큰입니다. 매뉴얼·PDF·시트를 통째로 넣는 리서치가 현실적인 비용이 됐습니다.\n- 전화·결제 대행은 '한도 + 승인'이 기본값 — Gemini Tasks(한국 무료), ChatGPT Wallet, Grok Bot 모두 지출 한도·생체 승인·도구별 권한(Always allow/Auto-review/Needs approval/Blocked)을 붙였습니다. \"되돌리기 어려운 일은 승인\" 원칙과 같은 모델이니, 자동화마다 이 4단계를 적어 두는 편이 좋습니다.\n- 자동화 보고에 '못 한 일' 칸을 — GPT-6.2는 성능이 크게 올랐지만, 평가에서 누락 파일·검색 실패 같은 장애물을 보고하지 않는 경향이 확인됐습니다(OpenAI 자체 공개). 자동화 결과에는 \"무엇을 못 했는지\"를 남기는 필드가 필요합니다.\n- AI 흔적 표시가 규제로 — Grok API는 EU AI Act 대응으로 텍스트 워터마크를 도입했고, 각 사가 승인·출처·안전 정책을 제품 기본값으로 넣고 있습니다. 블로그·보고서에 AI 도움 여부를 밝히는 규칙을 스킬에 넣을 만합니다.\n\n\n### Claude\n\n\n- 2026-11-10 · Claude Data 정식 출시(Whiteboards·Sheets 베타 동시) — BigQuery·Redshift·ClickHouse 등 웨어하우스에 붙어 지표 질의·데이터 스토리·실시간 공유. 인증된 쿼리, 대시보드 캐싱·새로고침 주기, 변경 추적·버전 되돌리기, 디자인 시스템을 지원. Sheets는 탭·수식·서식·드롭다운까지 만들고 셀 단위 편집을 추적. | https://claude.com/resources/articles/sheets-whiteboards-data\n- 2026-11-09 · Claude Fable 5.2·Mythos 5.2 — 코딩·추론·비전 개선, 출력 30% 빠름. 가격 $8/$40(백만 토큰), fast 모드는 2.5배 속도에 $16/$80. 같은 모델을 안전장치로 나눠 Fable은 전체 공개, Mythos는 검증 프로그램 대상. | https://www.anthropic.com/claude-fable-and-mythos-5-2\n- 2026-11-12 · Claude Meetings 베타 — Google Meet에 참여자로 들어가 회의 중 문서·화이트보드 초안을 만들고, 회의록과 액션 아이템을 정리. Team·Enterprise 대상, 오디오는 저장하지 않고 전사·요약·화면 설명만 저장. | https://claude.com/resources/articles/claude-meetings\n- 2026-11-02 · 메시지 스레드(API 베타) — 긴 에이전트 세션에서 전체 대화를 매번 다시 보내지 않아 첫 응답 대기가 약 35% 줄어듦(50만~100만 토큰 요청 기준). 가격·한도는 그대로. | https://thenextweb.com/news/anthropic-message-threads-beta-claude-api-agents\n\n\n### ChatGPT\n\n\n- 2026-11-17 · GPT-6.2 Astra·Sol — Astra는 어려운 전문 작업용(슬라이드·스프레드시트·문서가 제공한 템플릿과 업계 관행을 더 따름), Sol은 일상·다단계 에이전트 작업용. ChatGPT Work·Codex에서 Plus·Pro·Enterprise·Edu 제공, API는 Astra $8/$40(캐시 $0.40), Sol $2/$10(백만 토큰). | https://openai.com/index/introducing-gpt-6-2-astra-sol/\n- 2026-11-20 · ChatGPT Space Plus 확대 — 페이지·슬라이드·파일을 모으는 작업 공간으로 Library를 대체. 연결된 앱(Gmail·Slack 등)에서 자동 갱신되는 페이지, 댓글로 협업. 공개 링크 없음, Free 계정은 공유 페이지 열람 불가. | https://help.openai.com/en/articles/20001549-getting-started-with-space-in-chatgpt\n- 2026-11-13 · ChatGPT Wallet — 에이전트가 실제 카드 정보 없이 결제. 구매마다 항목·금액·카드를 확인하고 Face ID·지문으로 승인하며, 결제망이 토큰을 발급. 미국 Pro·dots 한정으로 시작. | https://openai.com/index/introducing-chatgpt-wallet/\n- 2026-11-18 · Live Dictation — 말하는 즉시 텍스트로 받아쓰고, 10분 녹음 제한을 없앰. 전 플랜, 웹·데스크톱·iOS·Android. | https://www.theverge.com/ai-artificial-intelligence/1037634/openai-chatgpt-live-dictation\n- 2026-11-04 · Images 2.6 — 생성 50% 빨라지고 편집 간 일관성 개선, GIF 생성 추가. API는 Flare(저지연)·Sunburst(고품질) 두 모델. | https://openai.com/index/introducing-images-2-6/\n\n\n### Gemini\n\n\n- 2026-11-17 · Gemini Tasks 무료 확대(한국 포함) — 홈 화면 토글을 Chat에서 Task로 바꿔 전화 걸기(예: 정비 예약), 결제, 이메일 전달(gemini@google.com)로 일정 등록까지 맡김. AP2 결제·지출 한도, 반복 작업은 \"Always allow\", 격리 VM과 프롬프트 인젝션 필터 적용. | https://blog.google/innovation-and-ai/products/gemini-app/tasks-in-gemini-free-new-features/\n- 2026-11-12 · Gemini 4 Hydrogen — 에이전트 워크플로용 모델. 100만 토큰 전 구간 단일 가격 $1.50/$7.50, 출력 최대 100만 토큰, 사고 수준 low·medium·high·xhigh. PDF·시트·차트·영상을 묶어 인용 있는 보고서로 만드는 MKA 53.4%, Agents' Last Exam 71.6%. | https://blog.google/innovation-and-ai/models-and-research/gemini-models/introducing-gemini-4-hydrogen/\n- 2026-11-19 · Gemini computer use(Mac) — 격리된 백그라운드 창에서 앱과 웹을 조작해 반복 작업을 처리. 앱별 권한 선택, 라이브 프리뷰, 단계별 승인. 미국 영어·Apple Silicon·AI Plus/Pro/Ultra 한정. | https://blog.google/innovation-and-ai/products/gemini-app/computer-use-mac/\n- 2026-11-16 · Gemini Notebook 인터랙티브 사이트 — 노트의 소스를 \"make me a site\" 한마디로 인터랙티브 사이트·대시보드·프로젝트 트래커로 변환. 웹에서 전 세계 18세 이상, 모바일은 추후. | https://blog.google/innovation-and-ai/products/gemini-notebook/interactive-sites/\n\n\n### Grok\n\n\n- 2026-11-02 · Data Bot — 데이터팀이 직접 가르친 팀 봇. 웨어하우스 질의, 실험 설계·검정, 차트·대시보드, dbt 모델·파이프라인 알림 규칙을 '스킬'로 공유하고, 팀 채널에서 정기 보고까지 수행. 도입 후 데이터팀 업무 약 70시간/주를 대신 처리한 것으로 추정. 메모리 추가는 관리자 승인 후 공유. | https://x.ai/news/data-bot\n- 2026-11-11 · Grok Bot 1.0 — 팀 봇을 Slack·Microsoft Teams·화상회의로 공유, 먼저 할 일을 찾아 제안하는 프로액티브 동작, 브라우저·문서·프레젠테이션·인터랙티브 Pages 작성. 권한을 지키고 민감한 작업은 먼저 확인. Team·Enterprise. | https://x.ai/news/grok-bot-1-0\n- 2026-11-18 · Grok Bot 1.2.3 — 커넥터별 도구 권한을 Always allow·Auto-review·Needs approval·Blocked 4단계로 설정. 재연결이 필요하면 알림과 Slack·Teams DM으로도 알려 주고, 팀 관리자가 제공 도구를 제한할 수 있음. | https://x.ai/changelog/bot\n- 2026-11-07 · Grok API 텍스트 워터마크 — EU AI Act 대응으로 grok-4.7·4.6·4.5·4.3·4.20 계열 텍스트에 보이지 않는 워터마크를 기본 적용. 응답 헤더 x-watermark로 확인. 이후 문서는 팀 관리자가 모델별로 켜는 방식으로 정리되어 도입 전 콘솔 설정 확인 필요. | https://docs.x.ai/developers/advanced-api-usage/watermarking\n\n\n### 출처\n\n\n- 2026-11-10 · Anthropic — Claude Whiteboards, Claude Sheets, Claude Data | https://claude.com/resources/articles/sheets-whiteboards-data\n- 2026-11-09 · Anthropic — Claude Fable 5.2 and Claude Mythos 5.2 | https://www.anthropic.com/claude-fable-and-mythos-5-2\n- 2026-11-12 · Anthropic — Introducing Claude Meetings | https://claude.com/resources/articles/claude-meetings\n- 2026-11-02 · The Next Web — Anthropic message threads beta | https://thenextweb.com/news/anthropic-message-threads-beta-claude-api-agents\n- 2026-11-17 · OpenAI — Introducing GPT-6.2 Astra and Sol | https://openai.com/index/introducing-gpt-6-2-astra-sol/\n- 2026-11-20 · OpenAI Help Center — Getting started with Space in ChatGPT | https://help.openai.com/en/articles/20001549-getting-started-with-space-in-chatgpt\n- 2026-11-13 · OpenAI — Introducing ChatGPT Wallet | https://openai.com/index/introducing-chatgpt-wallet/\n- 2026-11-18 · The Verge — ChatGPT Live Dictation | https://www.theverge.com/ai-artificial-intelligence/1037634/openai-chatgpt-live-dictation\n- 2026-11-04 · OpenAI — Introducing Images 2.6 | https://openai.com/index/introducing-images-2-6/\n- 2026-11-17 · Google — Put Gemini to work for you (Tasks) | https://blog.google/innovation-and-ai/products/gemini-app/tasks-in-gemini-free-new-features/\n- 2026-11-12 · Google — Introducing Gemini 4 Hydrogen | https://blog.google/innovation-and-ai/models-and-research/gemini-models/introducing-gemini-4-hydrogen/\n- 2026-11-19 · Google — Automate Mac tasks with Gemini computer use | https://blog.google/innovation-and-ai/products/gemini-app/computer-use-mac/\n- 2026-11-16 · Google — Turn Gemini Notebook sources into interactive sites | https://blog.google/innovation-and-ai/products/gemini-notebook/interactive-sites/\n- 2026-11-02 · xAI — Giving every team a data scientist with Grok Bot | https://x.ai/news/data-bot\n- 2026-11-11 · xAI — Introducing Grok Bot 1.0 | https://x.ai/news/grok-bot-1-0\n- 2026-11-18 · xAI — Grok Bot changelog 1.2.3 | https://x.ai/changelog/bot\n- 2026-11-07 · xAI Docs — Output Watermarking (문서 2026-10-31 갱신) | https://docs.x.ai/developers/advanced-api-usage/watermarking";
 
   var areas = [
     { key: 'hub', no: '01', name: '업무자동화목록', role: '허브 · 목록/스킬/기획메모', count: '문서 8', hub: true },
     { key: 'blog', no: '02', name: '네이버블로그', role: '원고 · 이미지', count: '원고 1 · 이미지 1' },
-    { key: 'research', no: '03', name: '리서치', role: '자료 · 요약노트 · 출처', count: '폴더 3 · 비어 있음' },
+    { key: 'research', no: '03', name: '리서치', role: '자료 · 요약노트 · 출처', count: '폴더 3 · 요약노트 1' },
     { key: 'app', no: '04', name: '애플리케이션', role: '코드 · 배포 · 최종산출물', count: '폴더 3' },
     { key: 'daily', no: '05', name: '일상생활', role: '습관 체크 · 일일 실적', count: '시트 1 · 기록 2일' },
     { key: 'personal', no: '06', name: '개인', role: '개인 작업 공간', count: '비어 있음' }
@@ -117,6 +121,14 @@ window.PB_PREVIEW = (function () {
       path: '03_리서치/출처', updated: '2026-11-19',
       summary: '링크·발행일·발행처 목록. 출처 없는 주장은 쓰지 않는 규칙의 근거.',
       tags: ['출처', '폴더']
+    },
+    {
+      id: RESEARCH_DOC_ID, area: 'research', kind: 'doc', title: '4대 AI 신규 기능 리서치', status: 'progress',
+      path: '03_리서치/요약노트/4대 AI 신규 기능 리서치', updated: '2026-11-23',
+      summary: '1회차 · 2026-11-23 · 4대 AI(Claude·ChatGPT·Gemini·Grok) 2026년 10~11월 신규 기능 17건, 핵심 인사이트 6건.',
+      excerpt: '1회차 핵심 인사이트: 에이전트의 결과물이 문서·시트·페이지로, 지표는 인증된 정의 하나로, 100만 토큰·플랫 가격이 실무선.',
+      tags: ['리서치', '요약노트', '4대 AI'],
+      url: DOC + RESEARCH_DOC_ID + '/edit'
     },
 
     {
@@ -260,6 +272,34 @@ window.PB_PREVIEW = (function () {
     return base;
   })();
 
+  var researchNote = items.filter(function (i) { return i.id === RESEARCH_DOC_ID; })[0];
+  var researchReport = (function () {
+    var base = {
+      status: 'empty', name: '4대 AI 신규 기능 리서치', docId: RESEARCH_DOC_ID,
+      url: DOC + RESEARCH_DOC_ID + '/edit', path: '03_리서치/요약노트/4대 AI 신규 기능 리서치',
+      rounds: [], latest: null, count: 0, itemCount: 0, insightCount: 0, message: ''
+    };
+    if (!window.PBResearch) return base;
+    var parsed = window.PBResearch.parseReport(RESEARCH_TEXT);
+    base.rounds = parsed.rounds;
+    base.latest = parsed.latest;
+    base.count = parsed.count;
+    base.itemCount = parsed.itemCount;
+    base.insightCount = parsed.insightCount;
+    base.status = parsed.count ? 'ok' : 'empty';
+    if (!parsed.count) base.message = '문서는 있지만 아직 회차 내용이 없습니다.';
+    return base;
+  })();
+
+  var research = {
+    buckets: [
+      { name: '요약노트', files: researchNote ? [researchNote] : [] },
+      { name: '자료', files: [] },
+      { name: '출처', files: [] }
+    ],
+    topics: researchNote ? [{ title: researchNote.title, note: researchNote, data: [], sources: [] }] : []
+  };
+
   var timeline = [
     { date: '2026-11-20', title: 'Pickle_Base 워크스페이스 v1 배포', desc: '허브 대시보드·영역 탭·통합 검색·드라이브 읽기 연동을 GitHub Pages에 올림.' },
     { date: '2026-11-20', title: '폴더 구조 재정렬 — 허브를 01로', desc: '01_업무자동화목록을 맨 위로, 스킬 4종 문서와 구조 지도·목록 문서 번호 정리.' },
@@ -307,7 +347,9 @@ window.PB_PREVIEW = (function () {
     pending: pending,
     habits: habits,
     habitSheet: habitSheet,
-    stats: { automation: 3, skillsRun: 1, skillsTotal: 4, posts: 1, published: 1, drafts: 0, maxChars: 320, charLimit: 500, pending: 5, taskAll: taskStats.all, taskComplete: taskStats.complete, taskProgress: taskStats.progress, taskPending: taskStats.pending },
+    researchReport: researchReport,
+    research: research,
+    stats: { automation: 3, skillsRun: 1, skillsTotal: 4, posts: 1, published: 1, drafts: 0, maxChars: 320, charLimit: 500, researchRounds: researchReport.count, researchItems: researchReport.itemCount, pending: 5, taskAll: taskStats.all, taskComplete: taskStats.complete, taskProgress: taskStats.progress, taskPending: taskStats.pending },
     blog: { limit: 500 }
   };
 })();

@@ -27,6 +27,7 @@
     query: '',
     filter: 'all',
     habitCat: '',
+    report: '',
     model: PREVIEW,
     source: 'preview',
     token: null,
@@ -248,7 +249,7 @@
     } else if (!live) {
       notice.hidden = false;
       notice.className = 'notice';
-      notice.innerHTML = '프리뷰 모드입니다 — 2026-11-22 기준 Pickle_Base의 태스크 3건·스킬 4종·첫 글 메타데이터·건강습관 실적 2일을 담은 오프라인 스냅샷이에요. 실제 드라이브를 읽으려면 <strong>Google 계정 연결</strong>이 필요합니다.';
+      notice.innerHTML = '프리뷰 모드입니다 — 2026-11-23 기준 Pickle_Base의 태스크 3건·스킬 4종·첫 글 메타데이터·건강습관 실적 2일·4대 AI 리서치 1회차를 담은 오프라인 스냅샷이에요. 실제 드라이브를 읽으려면 <strong>Google 계정 연결</strong>이 필요합니다.';
       var b = document.createElement('button');
       b.className = 'btn btn--sm';
       b.style.marginLeft = '8px';
@@ -268,7 +269,9 @@
     var main = $('#main');
     if (state.query.trim()) { main.innerHTML = viewSearch(); attach(); return; }
     var map = { dashboard: viewDashboard, hub: viewHub, blog: viewBlog, research: viewResearch, app: viewApp, daily: viewDaily };
-    main.innerHTML = (state.view === 'daily' && state.habitCat) ? viewHabitDetail(state.habitCat) : (map[state.view] || viewDashboard)();
+    if (state.view === 'research' && state.report) main.innerHTML = viewResearchReport(state.report);
+    else if (state.view === 'daily' && state.habitCat) main.innerHTML = viewHabitDetail(state.habitCat);
+    else main.innerHTML = (map[state.view] || viewDashboard)();
     attach();
   }
 
@@ -520,19 +523,177 @@
     return '<div class="view">' + out + '</div>';
   }
 
+  /* ================= 리서치 (요약노트 회차) =================
+     리서치 탭 = 영역 태스크 현황 + 리서치 주제 카드 + 기존 버킷·규칙.
+     주제 카드를 누르면 회차별 상세(#research/report/ai-4)로 들어갑니다.
+     회차는 드라이브의 ‘03_리서치/요약노트/4대 AI 신규 기능 리서치’ 문서를 읽어 만듭니다. */
+  var RESEARCH_TOPIC = {
+    id: 'ai-4',
+    title: '4대 AI 신규 기능·인사이트 리서치',
+    noteTitle: '4대 AI 신규 기능 리서치',
+    vendors: 'Claude · ChatGPT · Gemini · Grok'
+  };
+  var DEFAULT_RESEARCH_REPORT = {
+    status: 'missing', name: RESEARCH_TOPIC.noteTitle, docId: '', url: '', path: '',
+    rounds: [], latest: null, count: 0, itemCount: 0, insightCount: 0,
+    message: '리서치 요약노트 정보를 찾지 못했습니다.'
+  };
+
+  function researchReportOf() {
+    var m = state.model;
+    var rr = m && m.researchReport;
+    if (rr && rr.status) return rr;
+    /* 드라이브에 연결됐는데 요약노트 정보가 없으면 프리뷰 회차를 섞지 않습니다. */
+    if (m && m.source === 'drive') {
+      return {
+        status: 'missing', name: RESEARCH_TOPIC.noteTitle, docId: '', url: '', path: '',
+        rounds: [], latest: null, count: 0, itemCount: 0, insightCount: 0,
+        message: '03_리서치/요약노트에서 ‘' + RESEARCH_TOPIC.noteTitle + '’ 문서를 찾지 못했습니다.'
+      };
+    }
+    return (PREVIEW && PREVIEW.researchReport) || DEFAULT_RESEARCH_REPORT;
+  }
+  function researchRoundDate(rr) {
+    return rr.latest && rr.latest.date ? rr.latest.date : '';
+  }
+  function shorten(s, n) {
+    var t = String(s || '').replace(/\s+/g, ' ').trim();
+    return t.length > n ? t.slice(0, n - 1) + '…' : t;
+  }
+  function researchStatusCard(rr) {
+    var title = '리서치 요약노트를 아직 만들지 않았습니다';
+    var tip = '<code>03_리서치/요약노트</code>에 <code>' + esc(RESEARCH_TOPIC.noteTitle) + '</code> 문서를 만들면 이 카드에 회차가 쌓입니다.';
+    if (rr.status === 'error') {
+      title = '리서치 문서를 읽지 못했습니다';
+      tip = '잠시 뒤 <b>동기화</b>를 다시 누르거나 상단의 Google 계정 연결 상태를 확인해 주세요.';
+    } else if (rr.status === 'empty') {
+      title = '문서에 아직 회차가 없습니다';
+      tip = '문서에 <code>## 1회차 · YYYY-MM-DD</code> 형식으로 회차를 적으면 여기에 나타납니다.';
+    }
+    return '<section class="card" data-research-card data-research-status="' + esc(rr.status) + '">' +
+      '<div class="card__head"><div><h2>리서치 주제</h2><p>요약노트에 쌓인 회차 · 카드를 누르면 상세</p></div>' +
+      (rr.url ? '<a class="btn btn--ghost btn--sm" href="' + esc(rr.url) + '" target="_blank" rel="noopener">문서 열기</a>' : '') + '</div>' +
+      '<div class="empty"><span class="empty__icon">🔎</span><h3>' + esc(title) + '</h3>' +
+      '<p>' + esc(rr.message || '') + '</p>' +
+      '<p class="small muted">' + tip + '</p>' +
+      (state.source === 'drive' ? '<div class="row row--gap"><button class="btn btn--sm" type="button" data-research-sync>동기화 다시 시도</button></div>' : '') +
+      '</div></section>';
+  }
+  function researchTopicCard(rr) {
+    if (rr.status !== 'ok' || !rr.latest) return researchStatusCard(rr);
+    var latest = rr.latest;
+    var leads = latest.insights.slice(0, 2).map(function (n) {
+      return '<span class="rcard__lead">· <b>' + esc(n.title) + '</b>' + (n.text ? ' — ' + esc(shorten(n.text, 64)) : '') + '</span>';
+    }).join('');
+    var sub = '최근 업데이트 ' + esc(latest.date || '—') + ' · 누적 ' + rr.count + '회차 · 항목 ' + rr.itemCount + '건';
+    var head = '<div class="card__head"><div><h2>리서치 주제</h2><p>요약노트에 쌓인 회차 · 카드를 누르면 상세</p></div>' +
+      '<a class="btn btn--ghost btn--sm" href="' + esc(rr.url) + '" target="_blank" rel="noopener">문서 열기</a></div>';
+    return '<section class="card" data-research-card data-research-status="ok">' + head +
+      '<button class="catcard rcard" type="button" data-report="' + esc(RESEARCH_TOPIC.id) + '" aria-label="' + esc(RESEARCH_TOPIC.title) + ' 상세 보기">' +
+      '<span class="catcard__mark" aria-hidden="true">🔎</span>' +
+      '<span class="catcard__main">' +
+      '<span class="catcard__title">' + esc(RESEARCH_TOPIC.title) + '<span class="tag">누적 ' + rr.count + '회차</span></span>' +
+      '<span class="catcard__sub">' + sub + '</span>' +
+      (leads ? '<span class="rcard__leads">' + leads + '</span>' : '') +
+      '<span class="catcard__foot">' + esc(RESEARCH_TOPIC.vendors) + ' · 출처 ' + (latest.sources || []).length + '건</span>' +
+      '</span>' +
+      '<span class="catcard__rate"><b>' + rr.count + '</b><span>누적 회차</span></span>' +
+      '<span class="catcard__go" aria-hidden="true">›</span>' +
+      '</button>' +
+      '<p class="small muted">상세에서 최신 회차 핵심 인사이트와 회차별 신규 기능·출처 링크를 최신순으로 봅니다.</p>' +
+      '</section>';
+  }
+  function researchItemRow(it) {
+    return '<li class="ritem" data-rdate="' + esc(it.date) + '">' +
+      '<div class="ritem__head">' + (it.date ? '<span class="ritem__date">' + esc(it.date) + '</span>' : '') +
+      '<b class="ritem__name">' + esc(it.name) + '</b></div>' +
+      (it.desc ? '<p class="ritem__desc">' + esc(it.desc) + '</p>' : '') +
+      (it.url ? '<a class="ritem__link" href="' + esc(it.url) + '" target="_blank" rel="noopener">' + esc(window.PBResearch ? window.PBResearch.hostOf(it.url) : '원문') + ' ↗</a>' : '') +
+      '</li>';
+  }
+  function researchRoundCard(r, isLatest) {
+    var groups = r.vendors.map(function (v) {
+      return '<div class="rgroup" data-vendor="' + esc(v.key) + '">' +
+        '<h3>' + esc(v.name) + '<span class="tag">' + v.items.length + '건</span></h3>' +
+        '<ul class="ritems">' + v.items.map(researchItemRow).join('') + '</ul></div>';
+    }).join('');
+    var sources = (r.sources || []).length
+      ? '<details class="rsources"><summary>이 회차 출처 ' + r.sources.length + '건</summary><ul>' + r.sources.map(function (s) {
+          return '<li>' + (s.date ? '<span>' + esc(s.date) + '</span> ' : '') + esc(s.publisher || s.name) + ' — ' +
+            (s.url ? '<a href="' + esc(s.url) + '" target="_blank" rel="noopener">' + esc(s.title || s.desc || s.url) + '</a>' : esc(s.title || s.desc)) + '</li>';
+        }).join('') + '</ul></details>'
+      : '';
+    return '<section class="card rround" data-round="' + r.no + '">' +
+      '<div class="card__head"><div><h2>' + esc(r.no + '회차') + '</h2><p>' + esc((r.date || '날짜 미상') + ' · 항목 ' + r.itemCount + '건 · 인사이트 ' + r.insights.length + '건') + '</p></div>' +
+      (isLatest ? '<span class="tag">최신</span>' : '') + '</div>' +
+      (groups || emptyInline('이 회차에는 정리된 기능이 없습니다')) +
+      sources + '</section>';
+  }
+
+  function viewResearchReport(id) {
+    var rr = researchReportOf();
+    if (String(id) !== RESEARCH_TOPIC.id || rr.status !== 'ok' || !rr.latest) {
+      return '<div class="view" data-research-report="' + esc(id) + '">' +
+        '<div class="detailbar"><button class="btn btn--ghost btn--sm" type="button" data-report-back>← 리서치</button>' +
+        (rr.url ? '<a class="btn btn--ghost btn--sm" href="' + esc(rr.url) + '" target="_blank" rel="noopener">문서 열기</a>' : '') + '</div>' +
+        '<section class="card">' + emptyInline('리서치 회차를 볼 수 없습니다', esc(rr.message || '아직 정리된 회차가 없습니다. 리서치 탭에서 상태를 확인해 주세요.')) + '</section></div>';
+    }
+    var latest = rr.latest;
+    var out = '<div class="view" data-research-report="' + esc(RESEARCH_TOPIC.id) + '">';
+    out += '<div class="detailbar">' +
+      '<button class="btn btn--ghost btn--sm" type="button" data-report-back>← 리서치</button>' +
+      '<a class="btn btn--ghost btn--sm" href="' + esc(rr.url) + '" target="_blank" rel="noopener">문서 열기</a>' +
+      '</div>';
+
+    out += '<section class="card hero hero--tight"><div>' +
+      '<p class="eyebrow">03_리서치 · 요약노트</p><h1>' + esc(RESEARCH_TOPIC.title) + '</h1>' +
+      '<p class="lede">누적 ' + rr.count + '회차 · 항목 ' + rr.itemCount + '건 · 출처 ' + (latest.sources || []).length + '건. 최신 회차의 핵심 인사이트를 먼저 보여 주고, 아래에 회차별 신규 기능과 출처 링크를 최신순으로 봅니다.</p></div>' +
+      '<div class="hero__meta"><span>최근 업데이트 ' + esc(latest.date || '—') + '</span><span>' + (state.source === 'drive' ? '문서 실시간' : '프리뷰 스냅샷') + '</span></div></section>';
+
+    out += '<section class="card insight" data-research-insights><div class="card__head"><div><h2>최신 회차 핵심 인사이트</h2><p>' + esc(latest.label) + ' · 방찬석 님 관점</p></div>' +
+      '<span class="tag">' + latest.insights.length + '건</span></div>' +
+      (latest.insights.length
+        ? '<ul class="insight__list">' + latest.insights.map(function (n) {
+            return '<li class="insight__row insight__row--' + esc(n.tone || 'info') + '">' +
+              '<span class="insight__dot" aria-hidden="true"></span>' +
+              '<span class="insight__body"><b>' + esc(n.title) + '</b>' + (n.text ? '<span>' + esc(n.text) + '</span>' : '') + '</span></li>';
+          }).join('') + '</ul>'
+        : emptyInline('핵심 인사이트가 없습니다', '문서의 “### 핵심 인사이트” 아래에 “- 제목 — 설명”으로 적으면 여기에 나타납니다.')) +
+      '</section>';
+
+    out += '<div class="section-label">회차별 신규 기능</div>';
+    out += rr.rounds.map(function (r, i) { return researchRoundCard(r, i === 0); }).join('');
+
+    out += '<section class="card"><div class="card__head"><div><h2>읽는 기준</h2><p>스킬: 리서치 요약 · 회차 누적</p></div></div>' +
+      '<ul class="rulelist">' +
+      '<li>회차는 같은 주제를 다시 요청할 때마다 하나씩 늘고, 이미 다룬 기능은 빼고 새 기능·다른 각도만 더합니다.</li>' +
+      '<li>각 항목의 날짜·이름은 공식 발표 기준이고, 확인되지 않은 내용은 적지 않습니다.</li>' +
+      '<li>원문 링크는 항목마다, 회차별 전체 목록은 “이 회차 출처”에 있습니다.</li>' +
+      '</ul></section>';
+
+    out += '</div>';
+    return out;
+  }
+
   function viewResearch() {
     var m = state.model;
+    var rr = researchReportOf();
     var buckets = (m.research && m.research.buckets) || [
       { name: '요약노트', files: m.items.filter(function (i) { return i.path.indexOf('03_리서치/요약노트/') === 0; }) },
       { name: '자료', files: m.items.filter(function (i) { return i.path.indexOf('03_리서치/자료/') === 0; }) },
       { name: '출처', files: m.items.filter(function (i) { return i.path.indexOf('03_리서치/출처/') === 0; }) }
     ];
-    var topics = (m.research && m.research.topics) || [];
+    var topics = ((m.research && m.research.topics) || []).filter(function (t) {
+      /* 요약노트 카드가 위에서 이 노트를 보여 주므로 주제 목록에서는 겹치지 않게 뺍니다. */
+      if (rr.docId && t.note && String(t.note.id) === String(rr.docId)) return false;
+      return String(t.title || '').indexOf(RESEARCH_TOPIC.noteTitle) < 0;
+    });
     var out = pageHead('03_리서치', '주제별 리서치 연결',
-      '주제 하나를 정하면 자료 → 출처 → 요약노트가 한 묶음으로 쌓입니다. 요약은 핵심 3~5줄과 나에게 의미 있는 시사점까지.',
-      '<span>버킷 3 · 요약노트 · 자료 · 출처</span><span>주기 · 미정</span>');
+      '주제 하나를 정하면 자료 → 출처 → 요약노트가 한 묶음으로 쌓입니다. 요약노트 카드를 누르면 회차별 인사이트와 신규 기능을 봅니다.',
+      '<span>버킷 3 · 요약노트 · 자료 · 출처</span><span>누적 ' + (rr.status === 'ok' ? rr.count + '회차' : '0회차') + '</span>');
 
     out += areaTaskCard('research');
+    out += researchTopicCard(rr);
 
     out += '<div class="buckets">' + buckets.map(function (b) {
       return '<div class="bucket"><div class="bucket__head"><b>' + esc(b.name) + '</b><span>' + (b.files || []).length + '</span></div>' +
@@ -549,8 +710,9 @@
               '<span class="item__title">' + esc(t.title) + '</span>' +
               '<span class="item__path">자료 ' + t.data.length + ' · 출처 ' + t.sources.length + '</span></span></div>';
           }).join('') + '</div>'
-        : '<div class="empty"><span class="empty__icon">⌕</span><h3>첫 주제를 기다리는 중</h3>' +
-          '<p>스킬 “리서치 요약”은 아직 설계만 된 상태입니다. 주제를 하나 주시면 <code>03_리서치/요약노트</code>에 첫 노트가 생기고, 여기에서 자료·출처와 함께 묶여 보입니다.</p></div>') +
+        : (rr.status === 'ok'
+          ? emptyInline('다른 주제를 기다리는 중', '4대 AI 리서치는 위 리서치 카드에서 회차별로 봅니다. 새 주제를 주시면 <code>03_리서치/요약노트</code>에 노트가 생기고 여기에 묶입니다.')
+          : emptyInline('첫 주제를 기다리는 중', '주제를 하나 주시면 <code>03_리서치/요약노트</code>에 첫 노트가 생기고, 여기에서 자료·출처와 함께 묶여 보입니다.'))) +
       '</section>';
 
     out += '<section class="card"><div class="card__head"><div><h2>리서치 규칙</h2><p>스킬 문서에서 가져온 기준</p></div></div>' +
@@ -559,6 +721,7 @@
       '<li>숫자·날짜는 원문 기준으로 적고, 추정이면 추정이라고 밝힌다.</li>' +
       '<li>요약은 핵심 3~5줄 + 나에게 의미 있는 시사점. 길게 쓰지 않는다.</li>' +
       '<li>확인되지 않은 내용은 “확인 안 됨”으로 구분해 적는다.</li>' +
+      '<li>같은 주제를 다시 요청하면 이전 회차 문서를 먼저 확인해 이미 다룬 내용은 빼고 새 기능·다른 각도만 더한다.</li>' +
       '</ul></section>';
 
     var rsItems = visible(itemsOf('research')).filter(function (i) { return i.kind === 'folder'; });
@@ -588,7 +751,7 @@
       '<dt>저장소</dt><dd><a href="https://github.com/cspang97/pickle-base" target="_blank" rel="noopener">github.com/cspang97/pickle-base</a> (public)</dd>' +
       '<dt>배포</dt><dd>GitHub Pages · main 브랜치 루트 · 2026-11-20</dd>' +
       '<dt>구성</dt><dd>정적 HTML/CSS/JS · Google Identity Services + Drive API v3 (읽기 전용)</dd>' +
-      '<dt>담은 것</dt><dd>허브 대시보드 · 영역별 탭 · 통합 검색/상태 필터 · 습관 체크 · 프리뷰 데이터 · 로그인 유지 · 뒤로가기 기록</dd>' +
+      '<dt>담은 것</dt><dd>허브 대시보드 · 영역별 탭 · 통합 검색/상태 필터 · 습관 체크 · 리서치 회차 · 프리뷰 데이터 · 로그인 유지 · 뒤로가기 기록</dd>' +
       '<dt>다음 후보</dt><dd>습관 기록을 드라이브 문서로 남기기 · 원고 상태 자동 갱신 · 실행 주기 정하기</dd>' +
       '</dl>' +
       '<div class="row row--gap"><a class="btn btn--primary btn--sm" href="' + esc(appUrl) + '" target="_blank" rel="noopener">앱 열기</a>' +
@@ -835,6 +998,27 @@
     pushRoute('daily', { kind: 'habit', id: String(id) });
     scrollTop();
     return true;
+  }
+
+  /* 리서치 주제 상세 — 회차가 있는 요약노트만 열립니다. */
+  function openReport(id) {
+    var rr = researchReportOf();
+    if (String(id) !== RESEARCH_TOPIC.id || rr.status !== 'ok') return false;
+    state.report = String(id);
+    render();
+    pushRoute('research', { kind: 'report', id: String(id) });
+    scrollTop();
+    return true;
+  }
+
+  function backToResearch() {
+    state.report = '';
+    render();
+    var s = window.history.state;
+    if (s && s.pb && s.overlay && s.overlay.kind === 'report') {
+      try { window.history.back(); return; } catch (e) { /* 아래로 */ }
+    }
+    replaceRoute('research', null);
   }
 
   function backToDaily() {
@@ -1094,7 +1278,7 @@
     var parts = raw.split('/');
     var view = validView(parts[0]) ? parts[0] : 'dashboard';
     var overlay = null;
-    if (parts[2] && (parts[1] === 'item' || parts[1] === 'task' || parts[1] === 'modal' || parts[1] === 'habit')) {
+    if (parts[2] && (parts[1] === 'item' || parts[1] === 'task' || parts[1] === 'modal' || parts[1] === 'habit' || parts[1] === 'report')) {
       overlay = { kind: parts[1], id: decodeURIComponent(parts.slice(2).join('/')) };
     }
     return { view: view, overlay: overlay };
@@ -1124,6 +1308,7 @@
     state.view = key;
     state.query = '';
     state.habitCat = '';
+    state.report = '';
     var si = $('#search');
     if (si) si.value = '';
     closeDrawerRaw();
@@ -1147,14 +1332,17 @@
     var o = r.overlay;
     var wantHabit = (o && o.kind === 'habit' && habitCategory(o.id)) ? String(o.id) : '';
     state.habitCat = wantHabit;
+    var wantReport = (o && o.kind === 'report' && String(o.id) === RESEARCH_TOPIC.id && researchReportOf().status === 'ok') ? String(o.id) : '';
+    state.report = wantReport;
     render();
     var opened = true;
-    if (wantHabit) opened = true;
+    if (wantHabit || wantReport) opened = true;
     else if (o && o.kind === 'task') opened = openTaskDrawer(o.id, { history: false });
     else if (o && o.kind === 'item') opened = openDrawer(o.id, { history: false });
     else if (o && o.kind === 'modal') opened = openSettings({ history: false });
     if (!opened) replaceRoute(state.view, null);
     if (o && o.kind === 'habit' && !wantHabit) replaceRoute(state.view, null);
+    if (o && o.kind === 'report' && !wantReport) replaceRoute(state.view, null);
     if (changed) scrollTop();
   }
   function currentRoute() {
@@ -1177,6 +1365,13 @@
     $$('#main [data-habit-cat]').forEach(function (el) {
       el.addEventListener('click', function () { openHabit(el.getAttribute('data-habit-cat')); });
     });
+    $$('#main [data-report]').forEach(function (el) {
+      el.addEventListener('click', function () { openReport(el.getAttribute('data-report')); });
+    });
+    var reportBack = $('#main [data-report-back]');
+    if (reportBack) reportBack.addEventListener('click', backToResearch);
+    var researchSync = $('#main [data-research-sync]');
+    if (researchSync) researchSync.addEventListener('click', function () { doSync('동기화'); });
     var habitBack = $('#main [data-habit-back]');
     if (habitBack) habitBack.addEventListener('click', backToDaily);
     var habitSync = $('#main [data-habit-sync]');
@@ -1307,8 +1502,13 @@
     if (bootRoute.overlay && bootRoute.overlay.kind === 'habit') {
       state.habitCat = habitCategory(bootRoute.overlay.id) ? String(bootRoute.overlay.id) : '';
     }
+    if (bootRoute.overlay && bootRoute.overlay.kind === 'report') {
+      state.report = (String(bootRoute.overlay.id) === RESEARCH_TOPIC.id && researchReportOf().status === 'ok') ? String(bootRoute.overlay.id) : '';
+    }
     replaceRoute(state.view, null);
-    if (bootRoute.overlay && (bootRoute.overlay.kind !== 'habit' || state.habitCat)) pushRoute(state.view, bootRoute.overlay);
+    if (bootRoute.overlay && (bootRoute.overlay.kind !== 'habit' || state.habitCat)) {
+      if (bootRoute.overlay.kind !== 'report' || state.report) pushRoute(state.view, bootRoute.overlay);
+    }
 
     // 저장된 구글 로그인이 살아 있으면 다시 묻지 않고 이어서 읽습니다.
     var resumed = restoreToken();
@@ -1318,6 +1518,7 @@
     if (bootRoute.overlay) {
       var opened = true;
       if (bootRoute.overlay.kind === 'habit') opened = !!state.habitCat;
+      else if (bootRoute.overlay.kind === 'report') opened = !!state.report;
       else if (bootRoute.overlay.kind === 'task') opened = openTaskDrawer(bootRoute.overlay.id, { history: false });
       else if (bootRoute.overlay.kind === 'item') opened = openDrawer(bootRoute.overlay.id, { history: false });
       if (!opened) replaceRoute(state.view, null);
