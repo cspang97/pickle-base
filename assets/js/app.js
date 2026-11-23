@@ -198,6 +198,12 @@
         '<span aria-hidden="true">' + t.icon + '</span>' + t.label +
         (n ? '<span class="tab__badge">' + n + '</span>' : '') + '</button>';
     }).join('');
+    /* 모바일에서 탭이 가로로 넘칠 때, 지금 보고 있는 탭이 보이게 맞춥니다. */
+    var sel = nav.querySelector('.tab[aria-selected="true"]');
+    if (sel && nav.clientWidth) {
+      var target = sel.offsetLeft - (nav.clientWidth - sel.offsetWidth) / 2;
+      nav.scrollLeft = target > 0 ? target : 0;
+    }
   }
   function tabCount(key) {
     var m = state.model;
@@ -233,7 +239,7 @@
     if ($('#btnDisconnect')) $('#btnDisconnect').hidden = !state.token;
     $('#footerSource').textContent = live
       ? '드라이브 실시간 · ' + (state.connectedEmail || '내 계정') + (state.model.syncedAt ? ' · ' + fmtDateTime(state.model.syncedAt) : '')
-      : '프리뷰 데이터 · 2026-11-20 스냅샷';
+      : '프리뷰 데이터 · 2026-11-22 스냅샷';
     var notice = $('#notice');
     if (state.error) {
       notice.hidden = false;
@@ -242,7 +248,7 @@
     } else if (!live) {
       notice.hidden = false;
       notice.className = 'notice';
-      notice.innerHTML = '프리뷰 모드입니다 — 2026-11-20 기준 Pickle_Base의 태스크 3건·스킬 4종·첫 글 메타데이터를 담은 오프라인 스냅샷이에요. 실제 드라이브를 읽으려면 <strong>Google 계정 연결</strong>이 필요합니다.';
+      notice.innerHTML = '프리뷰 모드입니다 — 2026-11-22 기준 Pickle_Base의 태스크 3건·스킬 4종·첫 글 메타데이터·건강습관 실적 2일을 담은 오프라인 스냅샷이에요. 실제 드라이브를 읽으려면 <strong>Google 계정 연결</strong>이 필요합니다.';
       var b = document.createElement('button');
       b.className = 'btn btn--sm';
       b.style.marginLeft = '8px';
