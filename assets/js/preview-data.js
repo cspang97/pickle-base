@@ -22,8 +22,8 @@ window.PB_PREVIEW = (function () {
     {
       id: 'doc-list', area: 'hub', kind: 'doc', title: '업무자동화 목록', status: 'progress',
       path: '01_업무자동화목록/업무자동화 목록', updated: '2026-11-20',
-      summary: '태스크 3건의 기준표. 분류·상태·연결 스킬·결과물 위치·다음 할 일을 담은 허브 문서.',
-      excerpt: 'Pickle_Base의 태스크 기준표입니다. 이 문서의 태스크 블록 하나가 태스크 한 건입니다.\n\n태스크 1. 네이버 블로그 첫 글 《새로운 시작》 발행 — 완료\n태스크 2. Pickle_Base 워크스페이스 웹앱 v1 제작·배포 — 완료\n태스크 3. 일상·건강 습관 체크 자동화 — 진행중',
+      summary: '태스크 4건의 기준표. 분류·상태·연결 스킬·결과물 위치·다음 할 일을 담은 허브 문서.',
+      excerpt: 'Pickle_Base의 태스크 기준표입니다. 이 문서의 태스크 블록 하나가 태스크 한 건입니다.\n\n태스크 1. 네이버 블로그 첫 글 《새로운 시작》 발행 — 완료\n태스크 2. Pickle_Base 워크스페이스 웹앱 v1 제작·배포 — 완료\n태스크 3. 일상·건강 습관 체크 자동화 — 진행중\n태스크 4. 4대 AI(Claude·ChatGPT·Gemini·Grok) 신규 기능·인사이트 리서치 — 진행중',
       tags: ['허브', '색인', '자동화 목록'],
       url: DOC + '15LMQutQ9JL0XBFnhSQ81zM7bspdzvvtragD_tRbCc6U/edit'
     },
@@ -228,6 +228,13 @@ window.PB_PREVIEW = (function () {
       output: '05_일상생활 (날짜별 기록)',
       note: '건강·식단 습관 8건을 구글 할 일 체크리스트로 운영 중',
       next: '정기 확인 시각과 기록 형식 정하기'
+    },
+    {
+      no: 4, title: '4대 AI(Claude·ChatGPT·Gemini·Grok) 신규 기능·인사이트 리서치', category: '리서치',
+      status: 'progress', statusText: '진행중', skill: '리서치 요약',
+      output: '03_리서치/요약노트/4대 AI 신규 기능 리서치',
+      note: '1회차 2026-11-23 · 10~11월 신규 기능 17건 · 인사이트 6건',
+      next: '1회차 결과 확인 후 추가 요청 시 2회차 누적 리서치'
     }
   ];
 
