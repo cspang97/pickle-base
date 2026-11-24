@@ -16,6 +16,8 @@ window.PBResearch = (function () {
   ];
   var INSIGHT_LABEL = '핵심 인사이트';
   var SOURCE_LABEL = '출처';
+  /* 벤더·인사이트·출처 외의 ### / #### / ##### 소제목(예: 제조 AX 사례, AX 과제 후보)은
+     별도 절로 읽고, 한 단계 더 깊은 소제목은 그 절 안의 묶음으로 읽습니다. */
 
   function cleanLines(raw) {
     var text = String(raw == null ? '' : raw).replace(/^\uFEFF/, '');
@@ -65,6 +67,27 @@ window.PBResearch = (function () {
     return { date: date, name: parts.name, desc: parts.desc, text: parts.desc || parts.name, url: link.url };
   }
 
+  function splitFields(raw) {
+    return String(raw || '').split(' | ').map(function (p) { return p.trim(); }).filter(function (p) { return p; });
+  }
+
+  function parseExtraItem(raw) {
+    var link = splitLink(raw);
+    var body = link.body.replace(/^[-•·]\s+/, '');
+    var m = body.match(/^(\d{4}-\d{2}-\d{2})\s*[·.]\s*(.+)$/);
+    var date = m ? m[1] : '';
+    var rest = m ? m[2] : body;
+    var parts = splitDash(rest);
+    var fields = splitFields(parts.desc);
+    return {
+      date: date,
+      name: parts.name,
+      desc: fields[0] || '',
+      fields: fields,
+      url: link.url
+    };
+  }
+
   function parseReport(raw) {
     var lines = cleanLines(raw);
     var rounds = [];
@@ -89,7 +112,7 @@ window.PBResearch = (function () {
         cur = {
           no: Number(round[1]) || rounds.length + 1,
           date: round[2] || '',
-          insights: [], vendors: [], sources: [], itemCount: 0
+          insights: [], vendors: [], sources: [], extras: [], itemCount: 0
         };
         cur.label = cur.no + '회차' + (cur.date ? ' · ' + cur.date : '');
         rounds.push(cur);
@@ -101,6 +124,8 @@ window.PBResearch = (function () {
       /* 소제목: "### Claude", "**Claude**", "Claude" 처럼 표식이 달라도 받습니다.
          긴 문장이 우연히 벤더 이름으로 시작해도 제목으로 오인하지 않도록
          표식이 있거나 짧은 줄일 때만 제목으로 봅니다. */
+      var hash = line.match(/^(#{1,6})\s*/);
+      var level = hash ? hash[1].length : 0;
       var isMarked = /^#{1,6}\s/.test(line) || /^\*\*.+\*\*$/.test(line);
       var head = line.replace(/^#{1,6}\s*/, '').replace(/^\*\*(.+)\*\*$/, '$1').trim();
       var isShort = head.length <= 24;
@@ -111,8 +136,29 @@ window.PBResearch = (function () {
       if (isSource) { section = { type: 'sources' }; continue; }
       if (v) { section = { type: 'vendor', key: v.key }; continue; }
 
+      if (head && (level >= 3 || /^\*\*.+\*\*$/.test(line))) {
+        var last = cur.extras[cur.extras.length - 1];
+        if (level >= 5 && last && level > last.level) {
+          var group = { title: head, items: [] };
+          last.groups.push(group);
+          section = { type: 'extra', sec: last, group: group };
+        } else {
+          var extra = { title: head, level: level || 3, items: [], groups: [] };
+          cur.extras.push(extra);
+          section = { type: 'extra', sec: extra, group: null };
+        }
+        continue;
+      }
+
       if (!section) continue;
-      if (!/^[-•·]\s+/.test(line)) continue;
+      if (!/^[-•·]\s+/.test(line)) continue;   
+
+      if (section.type === 'extra') {
+        var ex = parseExtraItem(line);
+        if (section.group) section.group.items.push(ex);
+        else section.sec.items.push(ex);
+        continue;
+      }
 
       if (section.type === 'insight') {
         var ins = splitDash(line.replace(/^[-•·]\s+/, ''));
@@ -135,6 +181,12 @@ window.PBResearch = (function () {
     rounds.forEach(function (r) {
       totalInsights += r.insights.length;
       totalItems += r.itemCount;
+      if (!r.extraCount) {
+        r.extraCount = r.extras.reduce(function (n, e) {
+          var own = e.items.length;
+          return n + own + e.groups.reduce(function (m, g) { return m + g.items.length; }, 0);
+        }, 0);
+      }
     });
     return {
       rounds: rounds,

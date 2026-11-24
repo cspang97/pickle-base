@@ -620,3 +620,18 @@ code{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:.9em;back
   .ritem__name{font-size:12.8px}
   .ritem__desc{font-size:12px}
 }
+
+/* 회차 부록(제조 AX 사례·AX 과제 후보) — ### / #### / ##### 소제목 절 */
+.rextra{margin-top:14px;border-color:var(--line-strong,#d9dee6)}
+.rextra>.card__head h2{font-size:15px}
+.rextra h4{display:flex;align-items:center;gap:8px;font-size:12.8px;font-weight:750;color:var(--accent-ink);margin:14px 0 8px}
+.rextra h4 .tag{margin:0}
+.rgroup[data-subgroup]{margin-top:12px}
+.cand{border:1px solid var(--line);border-radius:11px;padding:11px 12px;background:var(--surface-2)}
+.cand__head{display:flex;align-items:baseline;gap:8px;flex-wrap:wrap;margin-bottom:6px}
+.cand__head b{font-size:13.2px;font-weight:720;color:var(--ink);line-height:1.45;word-break:keep-all}
+.cand__fields{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:4px}
+.cand__field{font-size:12.2px;line-height:1.6;color:var(--ink-2);word-break:keep-all}
+.cand__field+ .cand__field{border-top:1px dotted var(--line);padding-top:4px}
+.cand__field b{font-weight:700;color:var(--ink);margin-right:6px}
+.cand .ritem__link{margin-top:6px;display:inline-block}

@@ -611,6 +611,38 @@
       (it.url ? '<a class="ritem__link" href="' + esc(it.url) + '" target="_blank" rel="noopener">' + esc(window.PBResearch ? window.PBResearch.hostOf(it.url) : '원문') + ' ↗</a>' : '') +
       '</li>';
   }
+  function researchFieldRow(field) {
+    var idx = field.indexOf(': ');
+    if (idx > 0 && idx <= 14) {
+      return '<li class="cand__field"><b>' + esc(field.slice(0, idx)) + '</b><span>' + esc(field.slice(idx + 2)) + '</span></li>';
+    }
+    return '<li class="cand__field">' + esc(field) + '</li>';
+  }
+  function researchExtraRow(it) {
+    if (!it.fields.length || (it.url && it.fields.length <= 1)) return researchItemRow(it);
+    return '<li class="cand" data-rdate="' + esc(it.date) + '">' +
+      '<div class="cand__head">' + (it.date ? '<span class="ritem__date">' + esc(it.date) + '</span>' : '') +
+      '<b>' + esc(it.name) + '</b></div>' +
+      '<ul class="cand__fields">' + it.fields.map(researchFieldRow).join('') + '</ul>' +
+      (it.url ? '<a class="ritem__link" href="' + esc(it.url) + '" target="_blank" rel="noopener">' + esc(window.PBResearch ? window.PBResearch.hostOf(it.url) : '원문') + ' ↗</a>' : '') +
+      '</li>';
+  }
+  function researchExtraCard(sec) {
+    var own = sec.items.length;
+    var grouped = sec.groups.reduce(function (n, g) { return n + g.items.length; }, 0);
+    var count = own + grouped;
+    var body = '';
+    if (own) body += '<ul class="ritems">' + sec.items.map(researchExtraRow).join('') + '</ul>';
+    body += sec.groups.map(function (g) {
+      return '<div class="rgroup" data-subgroup="' + esc(g.title) + '">' +
+        '<h4>' + esc(g.title) + '<span class="tag">' + g.items.length + '건</span></h4>' +
+        '<ul class="ritems">' + g.items.map(researchExtraRow).join('') + '</ul></div>';
+    }).join('');
+    return '<section class="card rextra" data-extra="' + esc(sec.title) + '" data-extra-level="' + esc(sec.level) + '">' +
+      '<div class="card__head"><div><h2>' + esc(sec.title) + '</h2><p>회차 부록 · 별도 절</p></div>' +
+      '<span class="tag">' + count + '건</span></div>' +
+      (body || emptyInline('이 절에는 정리된 항목이 없습니다')) + '</section>';
+  }
   function researchRoundCard(r, isLatest) {
     var groups = r.vendors.map(function (v) {
       return '<div class="rgroup" data-vendor="' + esc(v.key) + '">' +
@@ -623,11 +655,12 @@
             (s.url ? '<a href="' + esc(s.url) + '" target="_blank" rel="noopener">' + esc(s.title || s.desc || s.url) + '</a>' : esc(s.title || s.desc)) + '</li>';
         }).join('') + '</ul></details>'
       : '';
+    var extras = (r.extras || []).filter(function (sec) { return sec.items.length || sec.groups.length; }).map(researchExtraCard).join('');
     return '<section class="card rround" data-round="' + r.no + '">' +
-      '<div class="card__head"><div><h2>' + esc(r.no + '회차') + '</h2><p>' + esc((r.date || '날짜 미상') + ' · 항목 ' + r.itemCount + '건 · 인사이트 ' + r.insights.length + '건') + '</p></div>' +
+      '<div class="card__head"><div><h2>' + esc(r.no + '회차') + '</h2><p>' + esc((r.date || '날짜 미상') + ' · 항목 ' + r.itemCount + '건 · 인사이트 ' + r.insights.length + '건' + ((r.extras || []).length ? ' · 별도 ' + r.extras.length + '절' : '')) + '</p></div>' +
       (isLatest ? '<span class="tag">최신</span>' : '') + '</div>' +
       (groups || emptyInline('이 회차에는 정리된 기능이 없습니다')) +
-      sources + '</section>';
+      extras + sources + '</section>';
   }
 
   function viewResearchReport(id) {
