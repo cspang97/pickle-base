@@ -205,10 +205,10 @@ window.PB_PREVIEW = (function () {
       next: '3번째 글 주제 정하고 발행 주기·주제 범위 정하기'
     },
     {
-      no: 2, name: '리서치 요약', status: 'pending', statusText: '설계만 · 실행 0회',
-      trigger: '주제를 주실 때 (주기 미정)', output: '03_리서치/요약노트 · 자료 · 출처',
-      lastRun: '아직 없음',
-      next: '첫 주제를 정해 요약노트 1건 만들기'
+      no: 2, name: '리서치 요약', status: 'complete', statusText: '2회 누적',
+      trigger: '주제를 주실 때 (정기 실행 없음)', output: '03_리서치/요약노트 · 자료 · 출처',
+      lastRun: '2026-11-24 2회차 — 4대 AI 신규 기능 17건 + 제조 AX 사례 5건 + AX 과제 후보 24건·추천 8건(3계층)',
+      next: '요청 시 3회차 누적 리서치 (주제 범위·주기 미정)'
     },
     {
       no: 3, name: '애플리케이션 제작·배포', status: 'progress', statusText: '정의 완료 · 첫 실행',
@@ -377,7 +377,7 @@ window.PB_PREVIEW = (function () {
     habitSheet: habitSheet,
     researchReport: researchReport,
     research: research,
-    stats: { automation: 3, skillsRun: 1, skillsTotal: 4, posts: 2, published: 2, drafts: 0, maxChars: 334, charLimit: 500, researchRounds: researchReport.count, researchItems: researchReport.itemCount, pending: 5, taskAll: taskStats.all, taskComplete: taskStats.complete, taskProgress: taskStats.progress, taskPending: taskStats.pending },
+    stats: { automation: 3, skillsRun: 2, skillsTotal: 4, posts: 2, published: 2, drafts: 0, maxChars: 334, charLimit: 500, researchRounds: researchReport.count, researchItems: researchReport.itemCount, pending: 5, taskAll: taskStats.all, taskComplete: taskStats.complete, taskProgress: taskStats.progress, taskPending: taskStats.pending },
     blog: { limit: 500 }
   };
 })();
