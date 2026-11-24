@@ -501,6 +501,9 @@ window.PBDrive = (function () {
         item.statusLabel = pub ? '발행' : '초안';
         item.publishedUrl = pub;
         item.status = pub ? 'complete' : 'progress';
+        /* 발행일 — 본문 머리말의 "발행: YYYY-MM-DD"를 읽습니다. 없으면 수정일을 씁니다. */
+        var pubDate = String(text || '').match(/(?:발행|게시|작성일)\s*[:：]\s*(\d{4}-\d{2}-\d{2})/);
+        item.publishedAt = pubDate ? pubDate[1] : '';
       }
       items.push(item);
     });

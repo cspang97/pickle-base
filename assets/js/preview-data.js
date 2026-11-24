@@ -86,7 +86,7 @@ window.PB_PREVIEW = (function () {
 
     {
       id: 'post-1', area: 'blog', kind: 'doc', title: '새로운 시작', status: 'complete', statusLabel: '발행',
-      path: '02_네이버블로그/원고/새로운 시작', updated: '2026-11-19',
+      path: '02_네이버블로그/원고/새로운 시작', updated: '2026-11-19', publishedAt: '2026-11-19',
       chars: 320, limit: 500,
       summary: 'AX를 내 삶에 적용하는 두 목표(작업의 혁신·일상의 혁신)를 밝힌 첫 글. 320자.',
       excerpt: 'AX(AI Transformation)를 내 삶에 직접 적용해 보려 합니다. 목표는 두 가지입니다.\n\n첫째, 작업의 혁신. 핵심은 \'본질탐구\'와 \'적자생존(기록하고 정리하는 힘)\'입니다.\n\n둘째, 일상의 혁신. 거창한 계획보다 가벼운 마음으로 하나씩 도전하고 실천하는 게 중요하다고 생각합니다.',
@@ -98,7 +98,7 @@ window.PB_PREVIEW = (function () {
     },
     {
       id: 'post-2', area: 'blog', kind: 'doc', title: "AI 시대, '대학 AI 솔루션 스타트업'으로 여는 교육혁신", status: 'complete', statusLabel: '발행',
-      path: "02_네이버블로그/원고/AI 시대, '대학 AI 솔루션 스타트업'으로 여는 교육혁신", updated: '2026-11-23',
+      path: "02_네이버블로그/원고/AI 시대, '대학 AI 솔루션 스타트업'으로 여는 교육혁신", updated: '2026-11-23', publishedAt: '2026-11-23',
       chars: 334, limit: 500,
       summary: "AI 시대 교육혁신의 핵심은 '현장 문제 해결' — 대학 AI 솔루션 스타트업, 교수 주도·기업 신뢰, 학생 실전·정당한 보상, 양방향 보상. 334자.",
       excerpt: "AI 시대 교육혁신의 핵심은 '현장 문제 해결'입니다.\n\n[대학 AI 솔루션 스타트업] 지역대학이 스타트업을 세워 지역기업에 AI 솔루션을 제공합니다.",

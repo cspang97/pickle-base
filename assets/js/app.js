@@ -480,7 +480,7 @@
 
   function sortPosts(posts) {
     return posts.slice().sort(function (a, b) {
-      var da = String(a.updated || ''), db = String(b.updated || '');
+      var da = String(a.publishedAt || a.updated || ''), db = String(b.publishedAt || b.updated || '');
       if (da !== db) return da < db ? 1 : -1;
       return String(a.title).localeCompare(String(b.title));
     });
@@ -488,7 +488,7 @@
 
   /* 발행 글 한 줄 — 제목·발행일·글자 수·요약과 발행 링크를 바로 보여 줍니다. */
   function postRow(p) {
-    var meta = [p.updated || '', (p.chars || 0) + '자 / ' + (p.limit || 500) + '자'];
+    var meta = [(p.publishedAt || p.updated || ''), (p.chars || 0) + '자 / ' + (p.limit || 500) + '자'];
     if (p.category) meta.push(p.category);
     return '<div class="item item--post" data-post="' + esc(p.id) + '">' +
       '<span class="item__icon" aria-hidden="true">✎</span>' +
