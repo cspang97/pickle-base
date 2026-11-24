@@ -28,6 +28,7 @@
     filter: 'all',
     habitCat: '',
     report: '',
+    reportRound: '',
     model: PREVIEW,
     source: 'preview',
     token: null,
@@ -240,7 +241,7 @@
     if ($('#btnDisconnect')) $('#btnDisconnect').hidden = !state.token;
     $('#footerSource').textContent = live
       ? '드라이브 실시간 · ' + (state.connectedEmail || '내 계정') + (state.model.syncedAt ? ' · ' + fmtDateTime(state.model.syncedAt) : '')
-      : '프리뷰 데이터 · 2026-11-23 스냅샷';
+      : '프리뷰 데이터 · 2026-11-24 스냅샷';
     var notice = $('#notice');
     if (state.error) {
       notice.hidden = false;
@@ -249,7 +250,7 @@
     } else if (!live) {
       notice.hidden = false;
       notice.className = 'notice';
-      notice.innerHTML = '<span class="notice__text">프리뷰 모드입니다 — 2026-11-24 기준 Pickle_Base의 태스크 4건·스킬 4종·첫 글 메타데이터·건강습관 실적 2일·4대 AI 리서치 2회차(제조 AX)를 담은 오프라인 스냅샷이에요. 실제 드라이브를 읽으려면 <strong>Google 계정 연결</strong>이 필요합니다.</span>';
+      notice.innerHTML = '<span class="notice__text">프리뷰 모드입니다 — 2026-11-24 기준 Pickle_Base의 태스크 4건·스킬 4종·블로그 원고 2편·건강습관 실적 2일·4대 AI 리서치 2회차(제조 AX)를 담은 오프라인 스냅샷이에요. 실제 드라이브를 읽으려면 <strong>Google 계정 연결</strong>이 필요합니다.</span>';
       var b = document.createElement('button');
       b.className = 'btn btn--sm';
       b.style.marginLeft = '8px';
@@ -410,7 +411,7 @@
     var tc = taskCounts();
     var sourceNote = state.source === 'drive'
       ? '드라이브 실시간 · ' + fmtDateTime(m.syncedAt)
-      : '프리뷰 스냅샷 · 2026-11-23';
+      : '프리뷰 스냅샷 · 2026-11-24';
     var out = pageHead('허브 대시보드', '지금 Pickle_Base의 상태',
       '폴더를 열지 않아도 태스크와 스킬의 진행 상태, 최근 작업, 아직 정하지 않은 것이 한 화면에 모입니다. 상태 집계는 폴더·파일이 아니라 <code>업무자동화 목록</code>의 태스크 기준입니다.',
       '<span>데이터 · ' + esc(sourceNote) + '</span><span>태스크 ' + tc.all + '건 · 완료 ' + tc.complete + '</span>');
@@ -477,10 +478,38 @@
     return '<div class="empty"><span class="empty__icon">📭</span><h3>' + esc(text) + '</h3>' + (sub ? '<p>' + sub + '</p>' : '') + '</div>';
   }
 
+  function sortPosts(posts) {
+    return posts.slice().sort(function (a, b) {
+      var da = String(a.updated || ''), db = String(b.updated || '');
+      if (da !== db) return da < db ? 1 : -1;
+      return String(a.title).localeCompare(String(b.title));
+    });
+  }
+
+  /* 발행 글 한 줄 — 제목·발행일·글자 수·요약과 발행 링크를 바로 보여 줍니다. */
+  function postRow(p) {
+    var meta = [p.updated || '', (p.chars || 0) + '자 / ' + (p.limit || 500) + '자'];
+    if (p.category) meta.push(p.category);
+    return '<div class="item item--post" data-post="' + esc(p.id) + '">' +
+      '<span class="item__icon" aria-hidden="true">✎</span>' +
+      '<span class="item__main">' +
+      '<span class="item__title">' + esc(p.title) + statusChip(p) + '</span>' +
+      '<span class="item__path">' + esc(meta.join(' · ')) + '</span>' +
+      (p.summary ? '<span class="item__summary">' + esc(p.summary) + '</span>' : '') +
+      '</span>' +
+      '<span class="item__side item__side--links">' +
+      (p.publishedUrl ? '<a class="btn btn--primary btn--sm" href="' + esc(p.publishedUrl) + '" target="_blank" rel="noopener">발행 글 보기</a>' : '') +
+      (p.url ? '<a class="btn btn--ghost btn--sm" href="' + esc(p.url) + '" target="_blank" rel="noopener">원고</a>' : '') +
+      '</span></div>';
+  }
+
   function viewBlog() {
     var m = state.model;
-    var posts = visible(m.items.filter(function (i) { return i.area === 'blog' && i.kind === 'doc' && /\/원고\//.test(i.path); }));
-    var images = visible(m.items.filter(function (i) { return i.area === 'blog' && i.kind !== 'doc'; }));
+    var allPosts = m.items.filter(function (i) { return i.area === 'blog' && i.kind === 'doc' && /\/원고\//.test(i.path); });
+    var posts = visible(sortPosts(allPosts));
+    var images = visible(m.items.filter(function (i) { return i.area === 'blog' && i.kind !== 'doc'; }).sort(function (a, b) {
+      return String(a.updated || '') < String(b.updated || '') ? 1 : -1;
+    }));
     var limit = (m.blog && m.blog.limit) || 500;
     var s = m.stats || {};
 
@@ -492,6 +521,11 @@
 
     if (!posts.length) {
       out += '<section class="card">' + emptyInline('조건에 맞는 원고가 없습니다', '검색어나 상태 필터를 바꿔 보세요. 새 원고는 <code>02_네이버블로그/원고</code>에 저장합니다.') + '</section>';
+    } else {
+      out += '<section class="card" data-blog-posts><div class="card__head"><div><h2>발행 글 ' + posts.length + '편</h2>' +
+        '<p>발행일 최신순 · 제목·요약·발행 링크를 바로 봅니다</p></div>' +
+        '<span class="tag">원고 ' + posts.length + ' · 이미지 ' + m.items.filter(function (i) { return i.area === 'blog' && i.kind !== 'doc'; }).length + '</span></div>' +
+        '<div class="stack">' + posts.map(postRow).join('') + '</div></section>';
     }
 
     out += posts.map(function (p) {
@@ -499,12 +533,12 @@
       var pct = Math.min(100, Math.round(((p.chars || 0) / limit2) * 100));
       var body = p.body || p.excerpt || p.summary || '';
       var idSafe = esc(p.id);
-      return '<section class="card">' +
+      return '<section class="card" data-post-card="' + idSafe + '">' +
         '<div class="card__head"><div><h2>' + esc(p.title) + '</h2><p>' + esc(p.path) + '</p></div>' + statusChip(p) + '</div>' +
         '<p class="small muted">' + esc(p.summary || '') + '</p>' +
         '<div class="meter"><i style="width:' + pct + '%"></i></div>' +
         '<div class="meter__label"><span>' + (p.chars || 0) + '자 / ' + limit2 + '자 기준 (' + pct + '%)</span><span>여유 ' + Math.max(0, limit2 - (p.chars || 0)) + '자</span></div>' +
-        (body ? '<div class="dsection"><div class="pre" style="margin-top:14px">' + esc(body) + '</div></div>' : '') +
+        (body ? '<details class="postbody"><summary>본문 보기 (' + (p.chars || 0) + '자)</summary><div class="pre">' + esc(body) + '</div></details>' : '') +
         '<div class="row row--gap" style="margin-top:14px">' +
         (p.publishedUrl ? '<a class="btn btn--primary btn--sm" href="' + esc(p.publishedUrl) + '" target="_blank" rel="noopener">발행 글 보기</a>' : '') +
         (p.url ? '<a class="btn btn--ghost btn--sm" href="' + esc(p.url) + '" target="_blank" rel="noopener">원고 열기</a>' : '') +
@@ -556,6 +590,29 @@
   function researchRoundDate(rr) {
     return rr.latest && rr.latest.date ? rr.latest.date : '';
   }
+  function roundOf(rr, no) {
+    if (!no) return null;
+    return ((rr && rr.rounds) || []).filter(function (r) { return String(r.no) === String(no); })[0] || null;
+  }
+  function nonEmptyExtras(r) {
+    return ((r && r.extras) || []).filter(function (sec) { return sec.items.length || sec.groups.length; });
+  }
+  function roundSummaryLine(r) {
+    var parts = [];
+    if (r.itemCount) parts.push('4대 AI 신규 기능 ' + r.itemCount + '건');
+    if (r.insights.length) parts.push('인사이트 ' + r.insights.length + '건');
+    nonEmptyExtras(r).forEach(function (sec) {
+      var n = sec.items.length + sec.groups.reduce(function (m, g) { return m + g.items.length; }, 0);
+      if (!n) return;
+      parts.push(/\d+\s*건$/.test(sec.title) ? sec.title : sec.title + ' ' + n + '건');
+    });
+    return parts.join(' · ');
+  }
+  function roundVendorLine(r) {
+    var names = r.vendors.filter(function (v) { return v.items.length; }).map(function (v) { return v.name; });
+    var hasMfg = nonEmptyExtras(r).some(function (sec) { return /제조 AX|AX 과제|후보 풀|추천/.test(sec.title); });
+    return (names.length ? names.join(' · ') : '항목 없음') + (hasMfg ? ' + 제조·철강 AX' : '');
+  }
   function shorten(s, n) {
     var t = String(s || '').replace(/\s+/g, ' ').trim();
     return t.length > n ? t.slice(0, n - 1) + '…' : t;
@@ -579,6 +636,25 @@
       (state.source === 'drive' ? '<div class="row row--gap"><button class="btn btn--sm" type="button" data-research-sync>동기화 다시 시도</button></div>' : '') +
       '</div></section>';
   }
+  /* 리서치 주제 — 주제 카드(누적) 하나와 그 아래 회차별 카드(최신순)를 함께 놓습니다.
+     회차 카드를 누르면 그 회차의 부록·신규 기능이 상세에서 바로 열립니다. */
+  function researchRoundRow(r, isLatest) {
+    var leads = r.insights.slice(0, 2).map(function (n) {
+      return '<span class="rround__lead">· <b>' + esc(n.title) + '</b>' + (n.text ? ' — ' + esc(shorten(n.text, 56)) : '') + '</span>';
+    }).join('');
+    var focused = String(state.reportRound || '') === String(r.no);
+    return '<button class="catcard rcard rcard--round' + (focused ? ' rcard--focus' : '') + '" type="button" data-report="' + esc(RESEARCH_TOPIC.id) + '" data-round="' + r.no + '" aria-label="' + esc(r.no + '회차 ' + (r.date || '') + ' 상세 보기') + '">' +
+      '<span class="catcard__mark catcard__mark--round" aria-hidden="true">' + esc(String(r.no)) + '</span>' +
+      '<span class="catcard__main">' +
+      '<span class="catcard__title">' + esc(r.no + '회차') + '<span class="rround__date">' + esc(r.date || '날짜 미상') + '</span>' + (isLatest ? '<span class="tag">최신</span>' : '') + '</span>' +
+      (roundSummaryLine(r) ? '<span class="catcard__sub">' + esc(roundSummaryLine(r)) + '</span>' : '') +
+      (leads ? '<span class="rround__leads">' + leads + '</span>' : '') +
+      '<span class="catcard__foot">' + esc(roundVendorLine(r)) + '</span>' +
+      '</span>' +
+      '<span class="catcard__rate"><b>' + r.itemCount + '</b><span>신규 기능</span></span>' +
+      '<span class="catcard__go" aria-hidden="true">›</span>' +
+      '</button>';
+  }
   function researchTopicCard(rr) {
     if (rr.status !== 'ok' || !rr.latest) return researchStatusCard(rr);
     var latest = rr.latest;
@@ -588,6 +664,7 @@
     var sub = '최근 업데이트 ' + esc(latest.date || '—') + ' · 항목 ' + rr.itemCount + '건 · 출처 ' + (latest.sources || []).length + '건';
     var head = '<div class="card__head"><div><h2>리서치 주제</h2><p>요약노트에 쌓인 회차 · 카드를 누르면 상세</p></div>' +
       '<a class="btn btn--ghost btn--sm" href="' + esc(rr.url) + '" target="_blank" rel="noopener">문서 열기</a></div>';
+    var rounds = (rr.rounds || []).map(function (r, i) { return researchRoundRow(r, i === 0); }).join('');
     return '<section class="card" data-research-card data-research-status="ok">' + head +
       '<button class="catcard rcard" type="button" data-report="' + esc(RESEARCH_TOPIC.id) + '" aria-label="' + esc(RESEARCH_TOPIC.title) + ' 상세 보기">' +
       '<span class="catcard__mark" aria-hidden="true">🔎</span>' +
@@ -600,7 +677,10 @@
       '<span class="catcard__rate"><b>' + rr.count + '</b><span>누적 회차</span></span>' +
       '<span class="catcard__go" aria-hidden="true">›</span>' +
       '</button>' +
-      '<p class="small muted">상세에서 최신 회차 핵심 인사이트와 회차별 신규 기능·출처 링크를 최신순으로 봅니다.</p>' +
+      (rounds ? '<div class="rrounds"><p class="rrounds__label">회차별 보기 <span class="tag">최신순 ' + rr.count + '회차</span></p>' +
+        '<p class="small muted">회차 카드를 누르면 그 회차의 후보 풀·추천·신규 기능이 상세에서 바로 열립니다.</p>' +
+        '<div class="stack">' + rounds + '</div></div>' : '') +
+      '<p class="small muted">상세에서 회차별 핵심 인사이트와 신규 기능·출처 링크를 최신순으로 봅니다.</p>' +
       '</section>';
   }
   function researchItemRow(it) {
@@ -643,7 +723,7 @@
       '<span class="tag">' + count + '건</span></div>' +
       (body || emptyInline('이 절에는 정리된 항목이 없습니다')) + '</section>';
   }
-  function researchRoundCard(r, isLatest) {
+  function researchRoundCard(r, isLatest, focused) {
     var groups = r.vendors.map(function (v) {
       return '<div class="rgroup" data-vendor="' + esc(v.key) + '">' +
         '<h3>' + esc(v.name) + '<span class="tag">' + v.items.length + '건</span></h3>' +
@@ -655,10 +735,19 @@
             (s.url ? '<a href="' + esc(s.url) + '" target="_blank" rel="noopener">' + esc(s.title || s.desc || s.url) + '</a>' : esc(s.title || s.desc)) + '</li>';
         }).join('') + '</ul></details>'
       : '';
-    var extras = (r.extras || []).filter(function (sec) { return sec.items.length || sec.groups.length; }).map(researchExtraCard).join('');
-    return '<section class="card rround" data-round="' + r.no + '">' +
+    var extras = nonEmptyExtras(r).map(researchExtraCard).join('');
+    var ownInsights = (r.insights || []).length
+      ? '<details class="rround__idetail rround__insights"' + (focused ? ' open' : '') + '><summary>이 회차 핵심 인사이트 ' + r.insights.length + '건</summary>' +
+        '<ul class="insight__list rround__ilist">' + r.insights.map(function (n) {
+          return '<li class="insight__row insight__row--' + esc(n.tone || 'info') + '">' +
+            '<span class="insight__dot" aria-hidden="true"></span>' +
+            '<span class="insight__body"><b>' + esc(n.title) + '</b>' + (n.text ? '<span>' + esc(n.text) + '</span>' : '') + '</span></li>';
+        }).join('') + '</ul></details>'
+      : '';
+    return '<section class="card rround' + (focused ? ' rround--focus' : '') + '" data-round="' + r.no + '">' +
       '<div class="card__head"><div><h2>' + esc(r.no + '회차') + '</h2><p>' + esc((r.date || '날짜 미상') + ' · 항목 ' + r.itemCount + '건 · 인사이트 ' + r.insights.length + '건' + ((r.extras || []).length ? ' · 별도 ' + r.extras.length + '절' : '')) + '</p></div>' +
       (isLatest ? '<span class="tag">최신</span>' : '') + '</div>' +
+      ownInsights +
       (groups || emptyInline('이 회차에는 정리된 기능이 없습니다')) +
       extras + sources + '</section>';
   }
@@ -672,6 +761,8 @@
         '<section class="card">' + emptyInline('리서치 회차를 볼 수 없습니다', esc(rr.message || '아직 정리된 회차가 없습니다. 리서치 탭에서 상태를 확인해 주세요.')) + '</section></div>';
     }
     var latest = rr.latest;
+    var focus = roundOf(rr, state.reportRound) || latest;
+    var focusNo = state.reportRound ? String(focus.no) : '';
     var out = '<div class="view" data-research-report="' + esc(RESEARCH_TOPIC.id) + '">';
     out += '<div class="detailbar">' +
       '<button class="btn btn--ghost btn--sm" type="button" data-report-back>← 리서치</button>' +
@@ -683,10 +774,10 @@
       '<p class="lede">누적 ' + rr.count + '회차 · 항목 ' + rr.itemCount + '건 · 출처 ' + (latest.sources || []).length + '건. 최신 회차의 핵심 인사이트를 먼저 보여 주고, 아래에 회차별 신규 기능과 출처 링크를 최신순으로 봅니다.</p></div>' +
       '<div class="hero__meta"><span>최근 업데이트 ' + esc(latest.date || '—') + '</span><span>' + (state.source === 'drive' ? '문서 실시간' : '프리뷰 스냅샷') + '</span></div></section>';
 
-    out += '<section class="card insight" data-research-insights><div class="card__head"><div><h2>최신 회차 핵심 인사이트</h2><p>' + esc(latest.label) + ' · 방찬석 님 관점</p></div>' +
-      '<span class="tag">' + latest.insights.length + '건</span></div>' +
-      (latest.insights.length
-        ? '<ul class="insight__list">' + latest.insights.map(function (n) {
+    out += '<section class="card insight" data-research-insights data-focus-round="' + esc(focusNo) + '"><div class="card__head"><div><h2>' + (focusNo ? esc(focus.no + '회차 핵심 인사이트') : '최신 회차 핵심 인사이트') + '</h2><p>' + esc(focus.label) + ' · 방찬석 님 관점</p></div>' +
+      '<span class="tag">' + focus.insights.length + '건</span></div>' +
+      (focus.insights.length
+        ? '<ul class="insight__list">' + focus.insights.map(function (n) {
             return '<li class="insight__row insight__row--' + esc(n.tone || 'info') + '">' +
               '<span class="insight__dot" aria-hidden="true"></span>' +
               '<span class="insight__body"><b>' + esc(n.title) + '</b>' + (n.text ? '<span>' + esc(n.text) + '</span>' : '') + '</span></li>';
@@ -695,7 +786,7 @@
       '</section>';
 
     out += '<div class="section-label">회차별 신규 기능</div>';
-    out += rr.rounds.map(function (r, i) { return researchRoundCard(r, i === 0); }).join('');
+    out += rr.rounds.map(function (r, i) { return researchRoundCard(r, i === 0, !!focusNo && String(focusNo) === String(r.no)); }).join('');
 
     out += '<section class="card"><div class="card__head"><div><h2>읽는 기준</h2><p>스킬: 리서치 요약 · 회차 누적</p></div></div>' +
       '<ul class="rulelist">' +
@@ -708,6 +799,20 @@
     return out;
   }
 
+  function researchTopicRow(t) {
+    var isAi = String(t.title || '').indexOf(RESEARCH_TOPIC.noteTitle) >= 0;
+    var rr = researchReportOf();
+    var noteInfo = (isAi && rr.status === 'ok') ? ('요약노트 1 · 누적 ' + rr.count + '회차') : ('요약노트 ' + (t.note ? 1 : 0));
+    var body = '<span class="item__icon" aria-hidden="true">🧩</span><span class="item__main">' +
+      '<span class="item__title">' + esc(t.title) + (isAi ? '<span class="tag">위 카드에서 회차별</span>' : '') + '</span>' +
+      '<span class="item__path">' + esc(noteInfo + ' · 자료 ' + (t.data || []).length + ' · 출처 ' + (t.sources || []).length) + '</span></span>';
+    if (isAi) {
+      return '<button class="item" type="button" data-report="' + esc(RESEARCH_TOPIC.id) + '" aria-label="' + esc(t.title) + ' 상세 보기">' + body +
+        '<span class="item__side">상세 ›</span></button>';
+    }
+    return '<div class="item" style="cursor:default">' + body + '</div>';
+  }
+
   function viewResearch() {
     var m = state.model;
     var rr = researchReportOf();
@@ -716,11 +821,7 @@
       { name: '자료', files: m.items.filter(function (i) { return i.path.indexOf('03_리서치/자료/') === 0; }) },
       { name: '출처', files: m.items.filter(function (i) { return i.path.indexOf('03_리서치/출처/') === 0; }) }
     ];
-    var topics = ((m.research && m.research.topics) || []).filter(function (t) {
-      /* 요약노트 카드가 위에서 이 노트를 보여 주므로 주제 목록에서는 겹치지 않게 뺍니다. */
-      if (rr.docId && t.note && String(t.note.id) === String(rr.docId)) return false;
-      return String(t.title || '').indexOf(RESEARCH_TOPIC.noteTitle) < 0;
-    });
+    var topics = (m.research && m.research.topics) || [];
     var out = pageHead('03_리서치', '주제별 리서치 연결',
       '주제 하나를 정하면 자료 → 출처 → 요약노트가 한 묶음으로 쌓입니다. 요약노트 카드를 누르면 회차별 인사이트와 신규 기능을 봅니다.',
       '<span>버킷 3 · 요약노트 · 자료 · 출처</span><span>누적 ' + (rr.status === 'ok' ? rr.count + '회차' : '0회차') + '</span>');
@@ -736,15 +837,13 @@
         '</div>';
     }).join('') + '</div>';
 
-    out += '<section class="card"><div class="card__head"><div><h2>주제별 묶음</h2><p>요약노트를 기준으로 자료와 출처를 묶습니다</p></div></div>' +
+    out += '<section class="card" data-research-topics><div class="card__head"><div><h2>주제별 묶음</h2><p>요약노트를 기준으로 자료와 출처를 묶습니다 · 주제 ' + topics.length + '개</p></div>' +
+      (topics.length ? '<span class="tag">회차 ' + (rr.status === 'ok' ? rr.count : 0) + '</span>' : '') + '</div>' +
       (topics.length
-        ? '<div class="stack">' + topics.map(function (t) {
-            return '<div class="item" style="cursor:default"><span class="item__icon">🧩</span><span class="item__main">' +
-              '<span class="item__title">' + esc(t.title) + '</span>' +
-              '<span class="item__path">자료 ' + t.data.length + ' · 출처 ' + t.sources.length + '</span></span></div>';
-          }).join('') + '</div>'
+        ? '<div class="stack">' + topics.map(researchTopicRow).join('') + '</div>' +
+          '<p class="small muted">새 주제를 주시면 <code>03_리서치/요약노트</code>에 노트가 생기고 여기에 함께 묶입니다.</p>'
         : (rr.status === 'ok'
-          ? emptyInline('다른 주제를 기다리는 중', '4대 AI 리서치는 위 리서치 카드에서 회차별로 봅니다. 새 주제를 주시면 <code>03_리서치/요약노트</code>에 노트가 생기고 여기에 묶입니다.')
+          ? emptyInline('새 주제를 기다리는 중', '4대 AI 리서치는 위 리서치 주제 카드에서 회차별로 봅니다. 새 주제를 주시면 <code>03_리서치/요약노트</code>에 노트가 생기고 여기에 묶입니다.')
           : emptyInline('첫 주제를 기다리는 중', '주제를 하나 주시면 <code>03_리서치/요약노트</code>에 첫 노트가 생기고, 여기에서 자료·출처와 함께 묶여 보입니다.'))) +
       '</section>';
 
@@ -1033,19 +1132,28 @@
     return true;
   }
 
-  /* 리서치 주제 상세 — 회차가 있는 요약노트만 열립니다. */
-  function openReport(id) {
+  /* 리서치 주제 상세 — 회차가 있는 요약노트만 열립니다.
+     roundNo를 주면 그 회차의 인사이트·부록으로 바로 이동합니다. */
+  function focusRound(no) {
+    if (!no) { scrollTop(); return; }
+    var el = document.querySelector('#main .rround[data-round="' + String(no) + '"]');
+    if (!el || typeof el.scrollIntoView !== 'function') { scrollTop(); return; }
+    try { el.scrollIntoView({ behavior: 'smooth', block: 'start' }); } catch (e) { scrollTop(); }
+  }
+  function openReport(id, roundNo) {
     var rr = researchReportOf();
     if (String(id) !== RESEARCH_TOPIC.id || rr.status !== 'ok') return false;
     state.report = String(id);
+    state.reportRound = roundNo != null && String(roundNo) !== '' ? String(roundNo) : '';
     render();
     pushRoute('research', { kind: 'report', id: String(id) });
-    scrollTop();
+    focusRound(state.reportRound);
     return true;
   }
 
   function backToResearch() {
     state.report = '';
+    state.reportRound = '';
     render();
     var s = window.history.state;
     if (s && s.pb && s.overlay && s.overlay.kind === 'report') {
@@ -1342,6 +1450,7 @@
     state.query = '';
     state.habitCat = '';
     state.report = '';
+    state.reportRound = '';
     var si = $('#search');
     if (si) si.value = '';
     closeDrawerRaw();
@@ -1367,6 +1476,7 @@
     state.habitCat = wantHabit;
     var wantReport = (o && o.kind === 'report' && String(o.id) === RESEARCH_TOPIC.id && researchReportOf().status === 'ok') ? String(o.id) : '';
     state.report = wantReport;
+    state.reportRound = '';
     render();
     var opened = true;
     if (wantHabit || wantReport) opened = true;
@@ -1399,7 +1509,7 @@
       el.addEventListener('click', function () { openHabit(el.getAttribute('data-habit-cat')); });
     });
     $$('#main [data-report]').forEach(function (el) {
-      el.addEventListener('click', function () { openReport(el.getAttribute('data-report')); });
+      el.addEventListener('click', function () { openReport(el.getAttribute('data-report'), el.getAttribute('data-round')); });
     });
     var reportBack = $('#main [data-report-back]');
     if (reportBack) reportBack.addEventListener('click', backToResearch);

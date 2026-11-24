@@ -635,3 +635,31 @@ code{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:.9em;back
 .cand__field+ .cand__field{border-top:1px dotted var(--line);padding-top:4px}
 .cand__field b{font-weight:700;color:var(--ink);margin-right:6px}
 .cand .ritem__link{margin-top:6px;display:inline-block}
+
+/* ---------- 블로그 발행 글 목록 · 리서치 회차 카드 ---------- */
+.item--post{cursor:default}
+.item__side--links{flex-direction:row;align-items:center;gap:8px;flex-wrap:wrap;justify-content:flex-end}
+.postbody{margin-top:14px;border-top:1px dashed var(--line);padding-top:12px}
+.postbody summary{cursor:pointer;font-size:12.2px;font-weight:680;color:var(--ink-2)}
+.postbody .pre{margin-top:10px;max-height:320px;overflow:auto}
+
+.rrounds{margin-top:16px;border-top:1px dashed var(--line);padding-top:14px}
+.rrounds__label{display:flex;align-items:center;gap:8px;font-size:12.8px;font-weight:750;color:var(--accent-ink);margin:0 0 4px}
+.rrounds .stack{margin-top:10px}
+.rcard--round{padding:12px 14px}
+.catcard__mark--round{font-weight:800;font-size:17px;color:var(--accent-ink)}
+.rround__date{font-size:11.5px;font-weight:650;color:var(--muted);font-variant-numeric:tabular-nums}
+.rround__leads{display:flex;flex-direction:column;gap:3px;margin-top:2px}
+.rround__lead{font-size:12px;line-height:1.5;color:var(--ink-2);word-break:keep-all}
+.rround__lead b{font-weight:700;color:var(--ink)}
+.rcard--focus{border-color:var(--accent);background:color-mix(in srgb, var(--accent-soft) 45%, var(--surface))}
+.rround--focus{outline:2px solid color-mix(in srgb, var(--accent) 35%, transparent);outline-offset:2px}
+.rround__idetail{margin-top:0;margin-bottom:14px;border-top:1px dashed var(--line);padding-top:12px}
+.rround__idetail summary{cursor:pointer;font-size:12.2px;font-weight:680;color:var(--ink-2)}
+.rround__ilist{margin-top:10px}
+@media (max-width:640px){
+  .item--post{flex-wrap:wrap}
+  .item__side--links{width:100%;flex-direction:row;justify-content:flex-start;margin-top:4px}
+  .rcard--round{padding:11px 12px}
+  .rround__lead{font-size:11.8px}
+}

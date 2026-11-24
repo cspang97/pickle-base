@@ -1,5 +1,5 @@
 /* Pickle_Base 프리뷰 스냅샷
-   2026-11-20 기준 실제 Pickle_Base(구글 드라이브) 구조·문서 메타데이터를 옮긴 오프라인 데이터입니다.
+   2026-11-24 기준 실제 Pickle_Base(구글 드라이브) 구조·문서 메타데이터를 옮긴 오프라인 데이터입니다.
    민감한 개인 파일(backup/private.xlsx 등)은 담지 않았습니다. */
 window.PB_PREVIEW = (function () {
   var DOC = 'https://docs.google.com/document/d/';
@@ -11,8 +11,8 @@ window.PB_PREVIEW = (function () {
 
   var areas = [
     { key: 'hub', no: '01', name: '업무자동화목록', role: '허브 · 목록/스킬/기획메모', count: '문서 8', hub: true },
-    { key: 'blog', no: '02', name: '네이버블로그', role: '원고 · 이미지', count: '원고 1 · 이미지 1' },
-    { key: 'research', no: '03', name: '리서치', role: '자료 · 요약노트 · 출처', count: '폴더 3 · 요약노트 1' },
+    { key: 'blog', no: '02', name: '네이버블로그', role: '원고 · 이미지', count: '원고 2 · 이미지 2' },
+    { key: 'research', no: '03', name: '리서치', role: '자료 · 요약노트 · 출처', count: '폴더 3 · 요약노트 1 · 2회차' },
     { key: 'app', no: '04', name: '애플리케이션', role: '코드 · 배포 · 최종산출물', count: '폴더 3' },
     { key: 'daily', no: '05', name: '일상생활', role: '습관 체크 · 일일 실적', count: '시트 1 · 기록 2일' },
     { key: 'personal', no: '06', name: '개인', role: '개인 작업 공간', count: '비어 있음' }
@@ -23,7 +23,7 @@ window.PB_PREVIEW = (function () {
       id: 'doc-list', area: 'hub', kind: 'doc', title: '업무자동화 목록', status: 'progress',
       path: '01_업무자동화목록/업무자동화 목록', updated: '2026-11-20',
       summary: '태스크 4건의 기준표. 분류·상태·연결 스킬·결과물 위치·다음 할 일을 담은 허브 문서.',
-      excerpt: 'Pickle_Base의 태스크 기준표입니다. 이 문서의 태스크 블록 하나가 태스크 한 건입니다.\n\n태스크 1. 네이버 블로그 첫 글 《새로운 시작》 발행 — 완료\n태스크 2. Pickle_Base 워크스페이스 웹앱 v1 제작·배포 — 완료\n태스크 3. 일상·건강 습관 체크 자동화 — 진행중\n태스크 4. 4대 AI(Claude·ChatGPT·Gemini·Grok) 신규 기능·인사이트 리서치 — 진행중',
+      excerpt: 'Pickle_Base의 태스크 기준표입니다. 이 문서의 태스크 블록 하나가 태스크 한 건입니다.\n\n태스크 1. 네이버 블로그 글 2편 발행 — 완료\n태스크 2. Pickle_Base 워크스페이스 웹앱 v1 제작·배포 — 완료\n태스크 3. 일상·건강 습관 체크 자동화 — 진행중\n태스크 4. 4대 AI(Claude·ChatGPT·Gemini·Grok) 신규 기능·인사이트 리서치 (2회차) — 진행중',
       tags: ['허브', '색인', '자동화 목록'],
       url: DOC + '15LMQutQ9JL0XBFnhSQ81zM7bspdzvvtragD_tRbCc6U/edit'
     },
@@ -97,11 +97,30 @@ window.PB_PREVIEW = (function () {
       category: '일상의 프로젝트화'
     },
     {
+      id: 'post-2', area: 'blog', kind: 'doc', title: "AI 시대, '대학 AI 솔루션 스타트업'으로 여는 교육혁신", status: 'complete', statusLabel: '발행',
+      path: "02_네이버블로그/원고/AI 시대, '대학 AI 솔루션 스타트업'으로 여는 교육혁신", updated: '2026-11-23',
+      chars: 334, limit: 500,
+      summary: "AI 시대 교육혁신의 핵심은 '현장 문제 해결' — 대학 AI 솔루션 스타트업, 교수 주도·기업 신뢰, 학생 실전·정당한 보상, 양방향 보상. 334자.",
+      excerpt: "AI 시대 교육혁신의 핵심은 '현장 문제 해결'입니다.\n\n[대학 AI 솔루션 스타트업] 지역대학이 스타트업을 세워 지역기업에 AI 솔루션을 제공합니다.",
+      body: "AI 시대 교육혁신의 핵심은 '현장 문제 해결'입니다.\n\n[대학 AI 솔루션 스타트업]\n지역대학이 스타트업을 세워 지역기업에 AI 솔루션을 제공합니다.\n\n[교수 주도 · 기업 신뢰]\n교수가 주도해 실제 효과를 입증하며 기업의 신뢰를 확보합니다.\n\n[학생 실전 · 정당한 보상]\n대학생은 산업현장 문제를 직접 풀며 고난도 AI 역량과 정당한 보상을 얻습니다.\n\n[양방향 보상 · 지자체 마중물]\n훈련장소를 내어준 기업엔 바우처 등으로 과제 대응 등의 소요비용을 보상하고, 기업은 검증된 성과에만 대가를 지불해 지역과 대학이 함께 성장합니다.\n\n#AI솔루션스타트업 #AI교육혁신 #양방향보상 #지역대학",
+      tags: ['원고', '발행', 'AX', '교육혁신'],
+      url: DOC + '1fCnS-NARysTvVJ20ZDYsxVoilj9ElCtATmC63diSu70/edit',
+      publishedUrl: 'https://blog.naver.com/cspang97/224488581182',
+      category: '일상의 프로젝트화'
+    },
+    {
       id: 'img-1', area: 'blog', kind: 'image', title: 'blog_img_1_desk.png', status: 'complete', statusLabel: '사용 중',
       path: '02_네이버블로그/이미지/blog_img_1_desk.png', updated: '2026-11-19',
       summary: '첫 글 대표 이미지(책상). 본문 맨 위에 들어감. 1.9MB.',
       tags: ['이미지', '대표'],
       url: FILE + '1cxpqmbXphBN8j37UIv-VIsfpijj1kMS1/view'
+    },
+    {
+      id: 'img-2', area: 'blog', kind: 'image', title: 'blog2-editorial.png', status: 'complete', statusLabel: '사용 중',
+      path: '02_네이버블로그/이미지/blog2-editorial.png', updated: '2026-11-23',
+      summary: '2번째 글 대표 이미지(교육혁신 에디토리얼). 본문 맨 위에 들어감. 1536×1024 · 2.2MB.',
+      tags: ['이미지', '대표'],
+      url: FILE + '1cLSpXON0vdtWnM5ynsnx0zLz6gVAWH-h/view'
     },
 
     {
@@ -124,10 +143,10 @@ window.PB_PREVIEW = (function () {
     },
     {
       id: RESEARCH_DOC_ID, area: 'research', kind: 'doc', title: '4대 AI 신규 기능 리서치', status: 'progress',
-      path: '03_리서치/요약노트/4대 AI 신규 기능 리서치', updated: '2026-11-23',
-      summary: '1회차 · 2026-11-23 · 4대 AI(Claude·ChatGPT·Gemini·Grok) 2026년 10~11월 신규 기능 17건, 핵심 인사이트 6건.',
-      excerpt: '1회차 핵심 인사이트: 에이전트의 결과물이 문서·시트·페이지로, 지표는 인증된 정의 하나로, 100만 토큰·플랫 가격이 실무선.',
-      tags: ['리서치', '요약노트', '4대 AI'],
+      path: '03_리서치/요약노트/4대 AI 신규 기능 리서치', updated: '2026-11-24',
+      summary: '2회차 누적 · 2회차 2026-11-24 제조·철강 AX 과제 24건(추천 8건) + 4대 AI 신규 기능 17건 · 1회차 2026-11-23 신규 기능 17건 · 인사이트 13건.',
+      excerpt: '2회차 핵심 인사이트: 부분 최적화의 함정 — 스틸웍스 전체 총이익 기준, 승인은 정책 파일로·관찰 모드 먼저, 대용량 계측은 범위 지정이 비용을 정한다.',
+      tags: ['리서치', '요약노트', '4대 AI', '제조 AX'],
       url: DOC + RESEARCH_DOC_ID + '/edit'
     },
 
@@ -180,10 +199,10 @@ window.PB_PREVIEW = (function () {
 
   var skills = [
     {
-      no: 1, name: '네이버 블로그 글 발행', status: 'complete', statusText: '1회 발행',
+      no: 1, name: '네이버 블로그 글 발행', status: 'complete', statusText: '2회 발행',
       trigger: '주제를 주실 때 즉시', output: '02_네이버블로그/원고 · 이미지',
-      lastRun: '2026-11-19 《새로운 시작》 320자 발행',
-      next: '발행 주기와 주제 범위 정하기'
+      lastRun: "2026-11-23 《AI 시대, '대학 AI 솔루션 스타트업'으로 여는 교육혁신》 334자 발행",
+      next: '3번째 글 주제 정하고 발행 주기·주제 범위 정하기'
     },
     {
       no: 2, name: '리서치 요약', status: 'pending', statusText: '설계만 · 실행 0회',
@@ -209,11 +228,11 @@ window.PB_PREVIEW = (function () {
      상단 전체·완료·진행중·미정 집계는 이 목록만 셉니다(폴더·파일 제외). */
   var tasks = [
     {
-      no: 1, title: '네이버 블로그 첫 글 《새로운 시작》 발행', category: '네이버블로그',
+      no: 1, title: '네이버 블로그 글 2편 발행', category: '네이버블로그',
       status: 'complete', statusText: '완료', skill: '네이버 블로그 글 발행',
-      output: '02_네이버블로그/원고/새로운 시작',
-      note: '2026-11-19 발행 · 320자 · 전체공개 · https://blog.naver.com/cspang97/224483535431',
-      next: '발행 주기와 주제 범위 정하기'
+      output: '02_네이버블로그/원고 (《새로운 시작》·《AI 시대, 대학 AI 솔루션 스타트업》)',
+      note: "2026-11-19 《새로운 시작》 320자 · 2026-11-23 《AI 시대, '대학 AI 솔루션 스타트업'으로 여는 교육혁신》 334자 · 모두 전체공개",
+      next: '3번째 글 주제 정하고 발행 주기·주제 범위 정하기'
     },
     {
       no: 2, title: 'Pickle_Base 워크스페이스 웹앱 v1 제작·배포', category: '애플리케이션',
@@ -233,8 +252,8 @@ window.PB_PREVIEW = (function () {
       no: 4, title: '4대 AI(Claude·ChatGPT·Gemini·Grok) 신규 기능·인사이트 리서치', category: '리서치',
       status: 'progress', statusText: '진행중', skill: '리서치 요약',
       output: '03_리서치/요약노트/4대 AI 신규 기능 리서치',
-      note: '1회차 2026-11-23 · 10~11월 신규 기능 17건 · 인사이트 6건',
-      next: '1회차 결과 확인 후 추가 요청 시 2회차 누적 리서치'
+      note: '1회차(2026-11-23) 4대 AI 신규 기능 17건 · 2회차(2026-11-24) 신규 기능 17건 + 제조 AX 사례 5건 + AX 과제 후보 24건·추천 8건(3계층: 스틸웍스 전체·단위 공장·단위 공정)',
+      next: '2회차 완료 — 정기 실행 없이 요청 시 3회차 누적 리서치'
     }
   ];
 
@@ -308,6 +327,8 @@ window.PB_PREVIEW = (function () {
   };
 
   var timeline = [
+    { date: '2026-11-24', title: '4대 AI 리서치 2회차 — 제조·철강 AX', desc: '제조 AX 사례 5건, AX 과제 후보 24건(3계층)·추천 8건, 4대 AI 신규 기능 17건을 요약노트에 누적.' },
+    { date: '2026-11-23', title: '블로그 2번째 글 발행', desc: "《AI 시대, '대학 AI 솔루션 스타트업'으로 여는 교육혁신》 334자, 카테고리 ‘일상의 프로젝트화’, 전체공개." },
     { date: '2026-11-20', title: 'Pickle_Base 워크스페이스 v1 배포', desc: '허브 대시보드·영역 탭·통합 검색·드라이브 읽기 연동을 GitHub Pages에 올림.' },
     { date: '2026-11-20', title: '폴더 구조 재정렬 — 허브를 01로', desc: '01_업무자동화목록을 맨 위로, 스킬 4종 문서와 구조 지도·목록 문서 번호 정리.' },
     { date: '2026-11-19', title: '블로그 첫 글 《새로운 시작》 발행', desc: '320자, 카테고리 ‘일상의 프로젝트화’, 전체공개.' },
@@ -336,7 +357,7 @@ window.PB_PREVIEW = (function () {
   return {
     source: 'preview',
     sourceLabel: '프리뷰 데이터',
-    snapshotAt: '2026-11-20',
+    snapshotAt: '2026-11-24',
     folderId: '1fpIsxCJsvKAyassJ8ABZcRXBht9tuxxx',
     areas: areas,
     items: items,
@@ -356,7 +377,7 @@ window.PB_PREVIEW = (function () {
     habitSheet: habitSheet,
     researchReport: researchReport,
     research: research,
-    stats: { automation: 3, skillsRun: 1, skillsTotal: 4, posts: 1, published: 1, drafts: 0, maxChars: 320, charLimit: 500, researchRounds: researchReport.count, researchItems: researchReport.itemCount, pending: 5, taskAll: taskStats.all, taskComplete: taskStats.complete, taskProgress: taskStats.progress, taskPending: taskStats.pending },
+    stats: { automation: 3, skillsRun: 1, skillsTotal: 4, posts: 2, published: 2, drafts: 0, maxChars: 334, charLimit: 500, researchRounds: researchReport.count, researchItems: researchReport.itemCount, pending: 5, taskAll: taskStats.all, taskComplete: taskStats.complete, taskProgress: taskStats.progress, taskPending: taskStats.pending },
     blog: { limit: 500 }
   };
 })();
