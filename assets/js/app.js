@@ -177,6 +177,23 @@
   function areaTasks(areaKey) {
     return taskList().filter(function (t) { return taskAreaKey(t) === areaKey; });
   }
+  /* 영역별 넘버링 — 영역 탭의 '이 영역 태스크 현황' 표에서 #은 전체 번호가 아니라
+     그 영역 태스크 안에서의 순번(1, 2, …)입니다. 순번은 상태 필터·검색과 상관없이
+     영역 전체 태스크를 문서 순서대로 세어 매기므로, '완료'만 걸러도 1·2번이 그대로 남습니다. */
+  function areaNoMap() {
+    var map = {}, seq = {};
+    taskList().forEach(function (t) {
+      var key = taskAreaKey(t);
+      if (!key) return;
+      seq[key] = (seq[key] || 0) + 1;
+      map[String(t.no)] = seq[key];
+    });
+    return map;
+  }
+  function areaNoOf(t) {
+    if (!t || !taskAreaKey(t)) return '';
+    return areaNoMap()[String(t.no)] || '';
+  }
 
   function taskCategories(list) {
     var out = [];
@@ -250,7 +267,7 @@
     } else if (!live) {
       notice.hidden = false;
       notice.className = 'notice';
-      notice.innerHTML = '<span class="notice__text">프리뷰 모드입니다 — 2026-11-24 기준 Pickle_Base의 태스크 4건·스킬 4종·블로그 원고 2편·건강습관 실적 2일·4대 AI 리서치 2회차(제조 AX)를 담은 오프라인 스냅샷이에요. 실제 드라이브를 읽으려면 <strong>Google 계정 연결</strong>이 필요합니다.</span>';
+      notice.innerHTML = '<span class="notice__text">프리뷰 모드입니다 — 2026-11-24 기준 Pickle_Base의 태스크 6건·스킬 4종·블로그 원고 2편·건강습관 실적 2일·4대 AI 리서치 2회차(제조 AX)를 담은 오프라인 스냅샷이에요. 실제 드라이브를 읽으려면 <strong>Google 계정 연결</strong>이 필요합니다.</span>';
       var b = document.createElement('button');
       b.className = 'btn btn--sm';
       b.style.marginLeft = '8px';
@@ -317,16 +334,23 @@
       '</article>';
   }
 
-  function taskTable(list) {
+  function taskTable(list, opts) {
+    opts = opts || {};
+    /* opts.byArea — 영역 탭에서는 영역 안 순번을, 업무자동화·검색 표에서는 전체 번호를 씁니다. */
+    var numbers = opts.byArea ? areaNoMap() : null;
     if (!list.length) {
       return emptyInline('조건에 맞는 태스크가 없습니다', '상태 필터를 “전체”로 바꾸거나 검색어를 지워 보세요.');
     }
     return '<div class="tablewrap"><table class="table table--tasks"><thead><tr>' +
-      '<th class="taskno">#</th><th>태스크</th><th>분류</th><th>상태</th><th>연결 스킬</th><th>결과물 위치</th><th>다음 할 일</th>' +
+      '<th class="taskno" title="' + (numbers ? '이 영역 안 순번' : '전체 번호') + '">#</th><th>태스크</th><th>분류</th><th>상태</th><th>연결 스킬</th><th>결과물 위치</th><th>다음 할 일</th>' +
       '</tr></thead><tbody>' +
       list.map(function (t) {
+        var no = numbers ? (numbers[String(t.no)] || '') : (t.no || '');
+        var noTitle = numbers
+          ? esc((AREA_CAT[taskAreaKey(t)] || {}).label || '') + ' ' + esc(String(no)) + '번 · 전체 ' + esc(String(t.no || '')) + '번'
+          : '태스크 ' + esc(String(t.no || '')) + '번';
         return '<tr class="taskrow" data-task="' + esc(String(t.no || '')) + '" title="태스크 상세 보기">' +
-          '<td class="taskno">' + esc(String(t.no || '')) + '</td>' +
+          '<td class="taskno" data-area-no="' + esc(String(no)) + '" title="' + noTitle + '">' + esc(String(no)) + '</td>' +
           '<td><button class="table__link" type="button">' + esc(t.title) + '</button>' + (t.note ? '<div class="path">' + esc(t.note) + '</div>' : '') + '</td>' +
           '<td>' + esc(t.category || '미분류') + '</td>' +
           '<td>' + chip(t.status) + '</td>' +
@@ -347,7 +371,7 @@
     all.forEach(function (t) { if (counts[t.status] !== undefined) counts[t.status]++; });
     var head = '<div class="card__head"><div><h2>이 영역 태스크 현황</h2><p>' +
       rows.length + '건 · ' + (state.filter === 'all' ? '전체' : ((STATUS[state.filter] || {}).label || '')) +
-      ' · 분류 ‘' + esc(def.label) + '’ 태스크 · 업무자동화 목록 기준</p></div>' +
+      ' · 분류 ‘' + esc(def.label) + '’ 태스크 · 업무자동화 목록 기준 · #은 이 영역 순번</p></div>' +
       '<div class="row row--gap">' +
       '<span class="tag">완료 ' + counts.complete + '</span>' +
       '<span class="tag">진행중 ' + counts.progress + '</span>' +
@@ -361,7 +385,7 @@
     } else if (!rows.length) {
       body = emptyInline('조건에 맞는 태스크가 없습니다', '상태 필터를 “전체”로 바꾸거나 검색어를 지워 보세요.');
     } else {
-      body = taskTable(rows);
+      body = taskTable(rows, { byArea: true });
     }
     return '<section class="card" data-area-tasks="' + areaKey + '">' + head + body + '</section>';
   }
@@ -404,6 +428,14 @@
     return (state.model && state.model.taskSource === 'skills')
       ? '태스크 기준표를 읽지 못해 스킬 정의로 대신 셉니다'
       : '01_업무자동화목록/업무자동화 목록의 태스크';
+  }
+  /* 드로어·카드에서 쓰는 번호 표기 — 영역이 있으면 '네이버블로그 1번(전체 2번)' 처럼 영역 순번을 앞세웁니다. */
+  function taskNoText(t) {
+    if (!t) return '태스크 —';
+    var area = taskAreaKey(t);
+    var an = areaNoOf(t);
+    if (!area || !an) return '태스크 ' + (t.no || '—') + '번';
+    return (AREA_CAT[area].label || '태스크') + ' ' + an + '번 · 전체 ' + (t.no || '—') + '번';
   }
 
   function viewDashboard() {
@@ -1245,7 +1277,7 @@
     ].filter(function (r) { return !!r[1]; });
 
     $('#drawerBody').innerHTML = '<h2 id="drawerTitle">' + esc(t.title) + '</h2>' +
-      '<div class="dpath">태스크 ' + esc(String(t.no || '—')) + ' · ' + esc(taskSourceLabel()) + '</div>' +
+      '<div class="dpath">' + esc(taskNoText(t)) + ' · ' + esc(taskSourceLabel()) + '</div>' +
       '<div class="row row--gap" style="margin-top:12px">' + chip(t.status) + '</div>' +
       '<div class="dsection"><h3>태스크 정보</h3><dl>' + rows.map(function (r) {
         return '<div class="drow"><dt>' + esc(r[0]) + '</dt><dd>' + (/^https?:/.test(String(r[1])) ? '<a href="' + esc(r[1]) + '" target="_blank" rel="noopener">열기</a>' : esc(r[1])) + '</dd></div>';

@@ -22,8 +22,8 @@ window.PB_PREVIEW = (function () {
     {
       id: 'doc-list', area: 'hub', kind: 'doc', title: '업무자동화 목록', status: 'progress',
       path: '01_업무자동화목록/업무자동화 목록', updated: '2026-11-20',
-      summary: '태스크 4건의 기준표. 분류·상태·연결 스킬·결과물 위치·다음 할 일을 담은 허브 문서.',
-      excerpt: 'Pickle_Base의 태스크 기준표입니다. 이 문서의 태스크 블록 하나가 태스크 한 건입니다.\n\n태스크 1. 네이버 블로그 글 2편 발행 — 완료\n태스크 2. Pickle_Base 워크스페이스 웹앱 v1 제작·배포 — 완료\n태스크 3. 일상·건강 습관 체크 자동화 — 진행중\n태스크 4. 4대 AI(Claude·ChatGPT·Gemini·Grok) 신규 기능·인사이트 리서치 (2회차) — 진행중',
+      summary: '태스크 6건의 기준표. 분류·상태·연결 스킬·결과물 위치·다음 할 일을 담은 허브 문서.',
+      excerpt: 'Pickle_Base의 태스크 기준표입니다. 이 문서의 태스크 블록 하나가 태스크 한 건입니다.\n\n태스크 1. 《새로운 시작》 발행 — 완료 (네이버블로그)\n태스크 2. 《AI 시대, 대학 AI 솔루션 스타트업으로 여는 교육혁신》 발행 — 완료 (네이버블로그)\n태스크 3. Pickle_Base 워크스페이스 웹앱 v1 제작·배포 — 완료 (애플리케이션)\n태스크 4. 일상·건강 습관 체크 자동화 — 진행중 (일상생활)\n태스크 5. 4대 AI 신규 기능·인사이트 리서치 (1회차) — 완료 (리서치)\n태스크 6. 제조·철강 AX 과제 발굴 및 4대 AI 신규 기능 리서치 (2회차) — 완료 (리서치)',
       tags: ['허브', '색인', '자동화 목록'],
       url: DOC + '15LMQutQ9JL0XBFnhSQ81zM7bspdzvvtragD_tRbCc6U/edit'
     },
@@ -225,35 +225,50 @@ window.PB_PREVIEW = (function () {
   ];
 
   /* 태스크 기준표 — 실제 '업무자동화 목록' 문서의 태스크 블록과 같은 내용.
-     상단 전체·완료·진행중·미정 집계는 이 목록만 셉니다(폴더·파일 제외). */
+     상단 전체·완료·진행중·미정 집계는 이 목록만 셉니다(폴더·파일 제외).
+     no는 문서 순서의 전체 번호이고, 영역 탭의 #은 이 목록에서 영역별로 다시 매긴 순번입니다. */
   var tasks = [
     {
-      no: 1, title: '네이버 블로그 글 2편 발행', category: '네이버블로그',
+      no: 1, title: '《새로운 시작》 발행', category: '네이버블로그',
       status: 'complete', statusText: '완료', skill: '네이버 블로그 글 발행',
-      output: '02_네이버블로그/원고 (《새로운 시작》·《AI 시대, 대학 AI 솔루션 스타트업》)',
-      note: "2026-11-19 《새로운 시작》 320자 · 2026-11-23 《AI 시대, '대학 AI 솔루션 스타트업'으로 여는 교육혁신》 334자 · 모두 전체공개",
+      output: '02_네이버블로그/원고/새로운 시작',
+      note: '2026-11-19 발행 · 320자 · 전체공개 · https://blog.naver.com/cspang97/224483535431 · 책상 이미지 본문 맨 위',
+      next: '발행 완료 — 다음 글 주제 정하기'
+    },
+    {
+      no: 2, title: "《AI 시대, '대학 AI 솔루션 스타트업'으로 여는 교육혁신》 발행", category: '네이버블로그',
+      status: 'complete', statusText: '완료', skill: '네이버 블로그 글 발행',
+      output: "02_네이버블로그/원고/AI 시대, '대학 AI 솔루션 스타트업'으로 여는 교육혁신",
+      note: '2026-11-23 발행 · 334자 · 전체공개 · https://blog.naver.com/cspang97/224488581182',
       next: '3번째 글 주제 정하고 발행 주기·주제 범위 정하기'
     },
     {
-      no: 2, title: 'Pickle_Base 워크스페이스 웹앱 v1 제작·배포', category: '애플리케이션',
+      no: 3, title: 'Pickle_Base 워크스페이스 웹앱 v1 제작·배포', category: '애플리케이션',
       status: 'complete', statusText: '완료', skill: '애플리케이션 제작·배포',
       output: 'https://cspang97.github.io/pickle-base/ (코드 04_애플리케이션/코드 · 저장소 github.com/cspang97/pickle-base)',
       note: '2026-11-20 GitHub Pages 배포 · 드라이브 읽기 전용 연동 · 전체·완료·진행중·미정 집계를 이 문서의 태스크 기준으로 개편',
       next: 'v1 사용 점검 후 다음 버전 범위 정하기'
     },
     {
-      no: 3, title: '일상·건강 습관 체크 자동화', category: '일상생활',
+      no: 4, title: '일상·건강 습관 체크 자동화', category: '일상생활',
       status: 'progress', statusText: '진행중', skill: '습관 체크',
       output: '05_일상생활 (날짜별 기록)',
       note: '건강·식단 습관 8건을 구글 할 일 체크리스트로 운영 중',
       next: '정기 확인 시각과 기록 형식 정하기'
     },
     {
-      no: 4, title: '4대 AI(Claude·ChatGPT·Gemini·Grok) 신규 기능·인사이트 리서치', category: '리서치',
-      status: 'progress', statusText: '진행중', skill: '리서치 요약',
+      no: 5, title: '4대 AI(Claude·ChatGPT·Gemini·Grok) 신규 기능·인사이트 리서치 (1회차)', category: '리서치',
+      status: 'complete', statusText: '완료', skill: '리서치 요약',
       output: '03_리서치/요약노트/4대 AI 신규 기능 리서치',
-      note: '1회차(2026-11-23) 4대 AI 신규 기능 17건 · 2회차(2026-11-24) 신규 기능 17건 + 제조 AX 사례 5건 + AX 과제 후보 24건·추천 8건(3계층: 스틸웍스 전체·단위 공장·단위 공정)',
-      next: '2회차 완료 — 정기 실행 없이 요청 시 3회차 누적 리서치'
+      note: '2026-11-23 · 4대 AI 신규 기능 17건 · 핵심 인사이트 6건 · 2026년 10~11월 공식 발표만',
+      next: '인사이트를 블로그 주제·업무 과제 후보로 연결하기'
+    },
+    {
+      no: 6, title: '제조·철강 AX 과제 발굴 및 4대 AI 신규 기능 리서치 (2회차)', category: '리서치',
+      status: 'complete', statusText: '완료', skill: '리서치 요약',
+      output: '03_리서치/요약노트/4대 AI 신규 기능 리서치',
+      note: '2026-11-24 · 제조 AX 사례 5건 · AX 과제 후보 24건·추천 8건(3계층: 스틸웍스 전체·단위 공장·단위 공정) · 신규 기능 17건·인사이트 7건',
+      next: '요청 시 3회차 누적 — 추천 8건 중 1건 파일럿 선정'
     }
   ];
 
