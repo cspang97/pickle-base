@@ -1,5 +1,5 @@
 /* Pickle_Base 프리뷰 스냅샷
-   2026-11-24 기준 실제 Pickle_Base(구글 드라이브) 구조·문서 메타데이터를 옮긴 오프라인 데이터입니다.
+   2026-11-26 기준 실제 Pickle_Base(구글 드라이브) 구조·문서 메타데이터를 옮긴 오프라인 데이터입니다.
    민감한 개인 파일(backup/private.xlsx 등)은 담지 않았습니다. */
 window.PB_PREVIEW = (function () {
   var DOC = 'https://docs.google.com/document/d/';
@@ -15,15 +15,16 @@ window.PB_PREVIEW = (function () {
     { key: 'research', no: '03', name: '리서치', role: '자료 · 요약노트 · 출처', count: '폴더 3 · 요약노트 1 · 2회차' },
     { key: 'app', no: '04', name: '애플리케이션', role: '코드 · 배포 · 최종산출물', count: '폴더 3' },
     { key: 'daily', no: '05', name: '일상생활', role: '습관 체크 · 일일 실적', count: '시트 1 · 기록 2일' },
-    { key: 'personal', no: '06', name: '개인', role: '개인 작업 공간', count: '비어 있음' }
+    { key: 'personal', no: '06', name: '개인', role: '개인 작업 공간', count: '비어 있음' },
+    { key: 'patent', no: '07', name: '특허등록', role: '아이디어 · 선행기술 · 명세서 · 출원', count: '폴더 4 · 아이디어 0' }
   ];
 
   var items = [
     {
       id: 'doc-list', area: 'hub', kind: 'doc', title: '업무자동화 목록', status: 'progress',
-      path: '01_업무자동화목록/업무자동화 목록', updated: '2026-11-20',
-      summary: '태스크 6건의 기준표. 분류·상태·연결 스킬·결과물 위치·다음 할 일을 담은 허브 문서.',
-      excerpt: 'Pickle_Base의 태스크 기준표입니다. 이 문서의 태스크 블록 하나가 태스크 한 건입니다.\n\n태스크 1. 《새로운 시작》 발행 — 완료 (네이버블로그)\n태스크 2. 《AI 시대, 대학 AI 솔루션 스타트업으로 여는 교육혁신》 발행 — 완료 (네이버블로그)\n태스크 3. Pickle_Base 워크스페이스 웹앱 v1 제작·배포 — 완료 (애플리케이션)\n태스크 4. 일상·건강 습관 체크 자동화 — 진행중 (일상생활)\n태스크 5. 4대 AI 신규 기능·인사이트 리서치 (1회차) — 완료 (리서치)\n태스크 6. 제조·철강 AX 과제 발굴 및 4대 AI 신규 기능 리서치 (2회차) — 완료 (리서치)',
+      path: '01_업무자동화목록/업무자동화 목록', updated: '2026-11-26',
+      summary: '태스크 7건의 기준표. 분류·상태·연결 스킬·결과물 위치·다음 할 일을 담은 허브 문서.',
+      excerpt: 'Pickle_Base의 태스크 기준표입니다. 이 문서의 태스크 블록 하나가 태스크 한 건입니다.\n\n태스크 1. 《새로운 시작》 발행 — 완료 (네이버블로그)\n태스크 2. 《AI 시대, 대학 AI 솔루션 스타트업으로 여는 교육혁신》 발행 — 완료 (네이버블로그)\n태스크 3. Pickle_Base 워크스페이스 웹앱 v1 제작·배포 — 완료 (애플리케이션)\n태스크 4. 일상·건강 습관 체크 자동화 — 진행중 (일상생활)\n태스크 5. 4대 AI 신규 기능·인사이트 리서치 (1회차) — 완료 (리서치)\n태스크 6. 제조·철강 AX 과제 발굴 및 4대 AI 신규 기능 리서치 (2회차) — 완료 (리서치)\n태스크 7. 특허등록 프레임워크·1호 아이디어 준비 — 미정 (특허등록)',
       tags: ['허브', '색인', '자동화 목록'],
       url: DOC + '15LMQutQ9JL0XBFnhSQ81zM7bspdzvvtragD_tRbCc6U/edit'
     },
@@ -66,6 +67,14 @@ window.PB_PREVIEW = (function () {
       excerpt: '목적: 정한 건강·식단 습관을 확인하고 지킨 것과 못 지킨 것을 기록한다.\n실행 조건: "습관 체크"라고 말할 때 — 등록된 항목을 하나씩 불러 오늘 어떻게 했는지 여쭙는다.\n규칙: 한 번에 한 항목만, 잔소리하지 않음, 못 지킨 날은 이유만 한 줄, 항목을 임의로 바꾸지 않음.\n지금 등록된 습관 8개 · 아직 정하지 않은 것: 정기 확인 시각, 기록 형식.',
       tags: ['스킬', '습관', '건강'],
       url: DOC + '1Hl5Q8OgS0Lo2l9L9f8jDq26NHbBedc5gQOVg3P05eks/edit'
+    },
+    {
+      id: 'skill-patent', area: 'hub', kind: 'doc', title: '스킬: 특허등록', status: 'pending',
+      path: '01_업무자동화목록/스킬/스킬: 특허등록', updated: '2026-11-26',
+      summary: '아이디어 발상·본업 무관성 확인 → KIPRIS 선행기술 조사 → 명세서·청구항 초안 → 특허로 출원 준비 4단계. 첫 아이디어를 기다립니다.',
+      excerpt: '목적: 떠오른 아이디어를 개인 명의 특허 출원까지 가져가도록 4단계로 돕는다.\n1단계 본업 무관성 확인 — 본업과 관련되면 회사 직무발명 절차를 따른다.\n2단계 KIPRIS 선행기술 조사·차별점 도출.\n3단계 명세서·청구항·도면 초안 구조화.\n4단계 특허로 전자출원 준비(본인 계정으로 직접).\n아직 정하지 않은 것: 1호 아이디어 주제, 출원 형태.',
+      tags: ['스킬', '특허', '출원'],
+      url: DOC + '1L50HQUEk4olihprWqqa6zbNcCuX2q5BXMVyUqv0ptEQ/edit'
     },
     {
       id: 'memo-sns', area: 'hub', kind: 'doc', title: 'SNS 유니버스 구상', status: 'pending',
@@ -194,6 +203,37 @@ window.PB_PREVIEW = (function () {
       path: '06_개인', updated: '2026-11-19',
       summary: '개인 작업 공간. 비어 있습니다.',
       tags: ['개인', '폴더']
+    },
+
+    {
+      id: 'patent-folder', area: 'patent', kind: 'folder', title: '07_특허등록', status: 'pending',
+      path: '07_특허등록', updated: '2026-11-26',
+      summary: '하위 4개 항목 · 아이디어 아직 없음 (특허로 4단계 틀)',
+      tags: ['특허', '폴더']
+    },
+    {
+      id: 'patent-idea', area: 'patent', kind: 'folder', title: '01_아이디어', status: 'pending',
+      path: '07_특허등록/01_아이디어', updated: '2026-11-26',
+      summary: '비어 있음 — 첫 아이디어를 기다립니다.',
+      tags: ['특허', '아이디어', '폴더']
+    },
+    {
+      id: 'patent-prior', area: 'patent', kind: 'folder', title: '02_선행기술조사', status: 'pending',
+      path: '07_특허등록/02_선행기술조사', updated: '2026-11-26',
+      summary: '비어 있음 — KIPRIS 조사 결과와 차별점을 모읍니다.',
+      tags: ['특허', '선행기술', '폴더']
+    },
+    {
+      id: 'patent-draft', area: 'patent', kind: 'folder', title: '03_명세서', status: 'pending',
+      path: '07_특허등록/03_명세서', updated: '2026-11-26',
+      summary: '비어 있음 — 명세서·청구항·도면 초안을 둡니다.',
+      tags: ['특허', '명세서', '폴더']
+    },
+    {
+      id: 'patent-file', area: 'patent', kind: 'folder', title: '04_출원', status: 'pending',
+      path: '07_특허등록/04_출원', updated: '2026-11-26',
+      summary: '비어 있음 — 특허로 출원서와 접수 자료를 둡니다.',
+      tags: ['특허', '출원', '폴더']
     }
   ];
 
@@ -221,6 +261,12 @@ window.PB_PREVIEW = (function () {
       trigger: '“습관 체크”라고 말할 때', output: '05_일상생활 (날짜별 기록)',
       lastRun: '수동 트리거만 · 정기 확인 시각 미정',
       next: '퇴근 후 확인 시각 정하기'
+    },
+    {
+      no: 5, name: '특허등록', status: 'pending', statusText: '설계 완료 · 첫 아이디어 대기',
+      trigger: '“특허등록”이라고 말할 때 (정기 실행 없음)', output: '07_특허등록 (01_아이디어 · 02_선행기술조사 · 03_명세서 · 04_출원)',
+      lastRun: '아직 없음',
+      next: '1호 아이디어 등록 — 본업 무관성 확인부터'
     }
   ];
 
@@ -269,6 +315,13 @@ window.PB_PREVIEW = (function () {
       output: '03_리서치/요약노트/4대 AI 신규 기능 리서치',
       note: '2026-11-24 · 제조 AX 사례 5건 · AX 과제 후보 24건·추천 8건(3계층: 스틸웍스 전체·단위 공장·단위 공정) · 신규 기능 17건·인사이트 7건',
       next: '요청 시 3회차 누적 — 추천 8건 중 1건 파일럿 선정'
+    },
+    {
+      no: 7, title: '특허등록 프레임워크·1호 아이디어 준비', category: '특허등록',
+      status: 'pending', statusText: '미정', skill: '특허등록',
+      output: '07_특허등록 (01_아이디어 · 02_선행기술조사 · 03_명세서 · 04_출원)',
+      note: '2026-11-26 메뉴·스킬 틀 신설 · 아이디어 미정 · 개인 직접 전자출원(특허로) 기준 4단계',
+      next: '첫 아이디어 등록 — 본업(철강 생산·품질·설비)과 무관한 개인 아이디어인지부터 확인'
     }
   ];
 
@@ -342,6 +395,7 @@ window.PB_PREVIEW = (function () {
   };
 
   var timeline = [
+    { date: '2026-11-26', title: '특허등록 스킬·메뉴 신설', desc: '07_특허등록 폴더와 ‘스킬: 특허등록’을 만들고, 웹앱 맨 마지막에 특허등록 탭(4단계 틀)을 추가.' },
     { date: '2026-11-24', title: '4대 AI 리서치 2회차 — 제조·철강 AX', desc: '제조 AX 사례 5건, AX 과제 후보 24건(3계층)·추천 8건, 4대 AI 신규 기능 17건을 요약노트에 누적.' },
     { date: '2026-11-23', title: '블로그 2번째 글 발행', desc: "《AI 시대, '대학 AI 솔루션 스타트업'으로 여는 교육혁신》 334자, 카테고리 ‘일상의 프로젝트화’, 전체공개." },
     { date: '2026-11-20', title: 'Pickle_Base 워크스페이스 v1 배포', desc: '허브 대시보드·영역 탭·통합 검색·드라이브 읽기 연동을 GitHub Pages에 올림.' },
@@ -351,6 +405,7 @@ window.PB_PREVIEW = (function () {
   ];
 
   var pending = [
+    { title: '특허 1호 아이디어 주제', desc: '07_특허등록 · 본업과 무관한 개인 아이디어 정하기' },
     { title: '블로그 발행 주기', desc: '02_네이버블로그 · 주제 범위와 함께 정하기' },
     { title: '리서치 주제 범위·주기', desc: '03_리서치 · 매일/주 1회, 업무/관심사 범위' },
     { title: '자동화 실행 시각·알림 방식', desc: '01_업무자동화목록 · 습관 체크 정기 확인 시각 포함' },
@@ -372,7 +427,7 @@ window.PB_PREVIEW = (function () {
   return {
     source: 'preview',
     sourceLabel: '프리뷰 데이터',
-    snapshotAt: '2026-11-24',
+    snapshotAt: '2026-11-26',
     folderId: '1fpIsxCJsvKAyassJ8ABZcRXBht9tuxxx',
     areas: areas,
     items: items,
@@ -392,7 +447,7 @@ window.PB_PREVIEW = (function () {
     habitSheet: habitSheet,
     researchReport: researchReport,
     research: research,
-    stats: { automation: 3, skillsRun: 2, skillsTotal: 4, posts: 2, published: 2, drafts: 0, maxChars: 334, charLimit: 500, researchRounds: researchReport.count, researchItems: researchReport.itemCount, pending: 5, taskAll: taskStats.all, taskComplete: taskStats.complete, taskProgress: taskStats.progress, taskPending: taskStats.pending },
+    stats: { automation: 3, skillsRun: 2, skillsTotal: 5, posts: 2, published: 2, drafts: 0, maxChars: 334, charLimit: 500, researchRounds: researchReport.count, researchItems: researchReport.itemCount, pending: 6, taskAll: taskStats.all, taskComplete: taskStats.complete, taskProgress: taskStats.progress, taskPending: taskStats.pending },
     blog: { limit: 500 }
   };
 })();

@@ -663,3 +663,32 @@ code{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:.9em;back
   .rcard--round{padding:11px 12px}
   .rround__lead{font-size:11.8px}
 }
+
+/* ---------- 특허등록: 4단계 파이프라인 ---------- */
+.steps{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}
+.step{
+  display:flex;flex-direction:column;gap:8px;padding:14px;
+  border:1px solid var(--line);border-radius:13px;background:var(--surface-2);
+}
+.step--next{
+  border-color:color-mix(in srgb, var(--accent) 38%, transparent);
+  background:color-mix(in srgb, var(--accent-soft) 42%, var(--surface));
+}
+.step__top{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.step__no{
+  font-size:11px;font-weight:800;letter-spacing:.02em;color:var(--accent-ink);
+  background:var(--accent-soft);border-radius:6px;padding:1px 7px;
+}
+.step__top .tag{margin-right:0}
+.step__top .tag:last-child{margin-left:auto}
+.step__title{font-size:13.4px;font-weight:730;line-height:1.45;color:var(--ink);word-break:keep-all}
+.step__desc{margin:0;font-size:12.2px;line-height:1.62;color:var(--ink-2);word-break:keep-all}
+.step__foot{margin:auto 0 0;font-size:11.2px;color:var(--muted);word-break:break-all}
+.step__foot code{font-size:10.8px;background:var(--surface)}
+@media (max-width:900px){.steps{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media (max-width:640px){
+  .steps{grid-template-columns:1fr;gap:10px}
+  .step{padding:12px}
+  .step__title{font-size:13px}
+  .step__desc{font-size:12px}
+}

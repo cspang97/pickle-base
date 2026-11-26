@@ -311,6 +311,7 @@ window.PBDrive = (function () {
     if (/^04_/.test(first)) return 'app';
     if (/^05_/.test(first)) return 'daily';
     if (/^06_/.test(first)) return 'personal';
+    if (/^07_/.test(first)) return 'patent';
     return 'hub';
   }
 
@@ -453,7 +454,8 @@ window.PBDrive = (function () {
       research: { key: 'research', no: '03', name: '리서치', role: '자료 · 요약노트 · 출처' },
       app: { key: 'app', no: '04', name: '애플리케이션', role: '코드 · 배포 · 최종산출물' },
       daily: { key: 'daily', no: '05', name: '일상생활', role: '습관 체크 기록' },
-      personal: { key: 'personal', no: '06', name: '개인', role: '개인 작업 공간' }
+      personal: { key: 'personal', no: '06', name: '개인', role: '개인 작업 공간' },
+      patent: { key: 'patent', no: '07', name: '특허등록', role: '아이디어 · 선행기술 · 명세서 · 출원' }
     };
 
     var items = [];

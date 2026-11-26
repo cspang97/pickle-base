@@ -13,7 +13,8 @@
     { key: 'blog', label: '블로그', icon: '✎' },
     { key: 'research', label: '리서치', icon: '⌕' },
     { key: 'app', label: '앱', icon: '▣' },
-    { key: 'daily', label: '일상·습관', icon: '☑' }
+    { key: 'daily', label: '일상·습관', icon: '☑' },
+    { key: 'patent', label: '특허등록', icon: '◈' }
   ];
 
   var STATUS = {
@@ -162,13 +163,14 @@
     blog: { label: '네이버블로그', test: /네이버블로그|블로그/ },
     research: { label: '리서치', test: /리서치/ },
     app: { label: '애플리케이션', test: /애플리케이션|앱|어플/ },
-    daily: { label: '일상생활', test: /일상생활|일상|습관|건강/ }
+    daily: { label: '일상생활', test: /일상생활|일상|습관|건강/ },
+    patent: { label: '특허등록', test: /특허|지식재산|아이피|IP/ }
   };
   function normCategory(s) { return String(s || '').replace(/[\s·・]/g, '').toLowerCase(); }
   function taskAreaKey(t) {
     var c = normCategory(t && t.category);
     if (!c) return '';
-    var keys = ['blog', 'research', 'app', 'daily'];
+    var keys = ['blog', 'research', 'app', 'daily', 'patent'];
     for (var i = 0; i < keys.length; i++) {
       if (AREA_CAT[keys[i]].test.test(c)) return keys[i];
     }
@@ -237,6 +239,8 @@
       if (hs && hs.category && hs.category.items.length) return hs.category.items.length;
       return (m.habits || []).length;
     }
+    /* 특허등록은 아이디어·조사·명세서 같은 문서가 쌓일 때만 배지를 답니다(빈 틀은 배지 없음). */
+    if (key === 'patent') return m.items.filter(function (i) { return i.area === 'patent' && i.kind !== 'folder'; }).length;
     return 0;
   }
   function renderStatusChips() {
@@ -258,7 +262,7 @@
     if ($('#btnDisconnect')) $('#btnDisconnect').hidden = !state.token;
     $('#footerSource').textContent = live
       ? '드라이브 실시간 · ' + (state.connectedEmail || '내 계정') + (state.model.syncedAt ? ' · ' + fmtDateTime(state.model.syncedAt) : '')
-      : '프리뷰 데이터 · 2026-11-24 스냅샷';
+      : '프리뷰 데이터 · 2026-11-26 스냅샷';
     var notice = $('#notice');
     if (state.error) {
       notice.hidden = false;
@@ -267,7 +271,7 @@
     } else if (!live) {
       notice.hidden = false;
       notice.className = 'notice';
-      notice.innerHTML = '<span class="notice__text">프리뷰 모드입니다 — 2026-11-24 기준 Pickle_Base의 태스크 6건·스킬 4종·블로그 원고 2편·건강습관 실적 2일·4대 AI 리서치 2회차(제조 AX)를 담은 오프라인 스냅샷이에요. 실제 드라이브를 읽으려면 <strong>Google 계정 연결</strong>이 필요합니다.</span>';
+      notice.innerHTML = '<span class="notice__text">프리뷰 모드입니다 — 2026-11-26 기준 Pickle_Base의 태스크 7건·스킬 5종·블로그 원고 2편·건강습관 실적 2일·4대 AI 리서치 2회차(제조 AX)·특허등록 틀을 담은 오프라인 스냅샷이에요. 실제 드라이브를 읽으려면 <strong>Google 계정 연결</strong>이 필요합니다.</span>';
       var b = document.createElement('button');
       b.className = 'btn btn--sm';
       b.style.marginLeft = '8px';
@@ -286,7 +290,7 @@
     renderChrome();
     var main = $('#main');
     if (state.query.trim()) { main.innerHTML = viewSearch(); attach(); return; }
-    var map = { dashboard: viewDashboard, hub: viewHub, blog: viewBlog, research: viewResearch, app: viewApp, daily: viewDaily };
+    var map = { dashboard: viewDashboard, hub: viewHub, blog: viewBlog, research: viewResearch, app: viewApp, daily: viewDaily, patent: viewPatent };
     if (state.view === 'research' && state.report) main.innerHTML = viewResearchReport(state.report);
     else if (state.view === 'daily' && state.habitCat) main.innerHTML = viewHabitDetail(state.habitCat);
     else main.innerHTML = (map[state.view] || viewDashboard)();
@@ -443,7 +447,7 @@
     var tc = taskCounts();
     var sourceNote = state.source === 'drive'
       ? '드라이브 실시간 · ' + fmtDateTime(m.syncedAt)
-      : '프리뷰 스냅샷 · 2026-11-24';
+      : '프리뷰 스냅샷 · 2026-11-26';
     var out = pageHead('허브 대시보드', '지금 Pickle_Base의 상태',
       '폴더를 열지 않아도 태스크와 스킬의 진행 상태, 최근 작업, 아직 정하지 않은 것이 한 화면에 모입니다. 상태 집계는 폴더·파일이 아니라 <code>업무자동화 목록</code>의 태스크 기준입니다.',
       '<span>데이터 · ' + esc(sourceNote) + '</span><span>태스크 ' + tc.all + '건 · 완료 ' + tc.complete + '</span>');
@@ -928,6 +932,142 @@
       '<div class="stack">' + (appItems.length ? appItems.map(function (i) { return itemRow(i); }).join('') : emptyInline('폴더가 없습니다')) + '</div></section>' +
       '</div>';
 
+    return '<div class="view">' + out + '</div>';
+  }
+
+  /* ================= 특허등록 (07_특허등록) =================
+     아직 등록된 아이디어가 없는 상태를 전제로 한 틀입니다.
+     개인 직접 전자출원(특허로) 기준 4단계:
+     아이디어 → KIPRIS 선행기술 조사 → 명세서·청구항 초안 → 특허로 출원 준비. */
+  var PATENT_AREA = '07_특허등록';
+  var PATENT_STEPS = [
+    {
+      key: 'idea', folder: '01_아이디어', label: '1단계',
+      title: '아이디어 발상 · 본업 무관성 확인',
+      desc: '떠올린 아이디어를 한 줄로 적고, 회사 업무(철강 생산·품질·설비)와 무관한 개인 아이디어인지 먼저 확인합니다. 본업과 관련되면 회사 직무발명 절차를 따릅니다.'
+    },
+    {
+      key: 'prior', folder: '02_선행기술조사', label: '2단계',
+      title: 'KIPRIS 선행기술 조사 · 차별점 도출',
+      desc: 'KIPRIS에서 같은 아이디어의 특허·공개를 찾아보고, 내 아이디어만의 차별점을 한 문장으로 정리합니다.'
+    },
+    {
+      key: 'draft', folder: '03_명세서', label: '3단계',
+      title: '명세서 · 청구항 · 도면 초안 구조화',
+      desc: '발명의 설명(과제—해결 수단—효과), 청구항(독립항과 종속항), 도면 목록을 초안으로 잡습니다. 청구항은 지키고 싶은 범위부터 씁니다.'
+    },
+    {
+      key: 'file', folder: '04_출원', label: '4단계',
+      title: '특허로 전자출원 준비',
+      desc: '특허청 전자출원(특허로)에 필요한 서류·수수료·일정을 확인하고 출원서 초안을 준비합니다. 출원은 본인 계정으로 직접 합니다.'
+    }
+  ];
+  function patentItems() {
+    return (state.model.items || []).filter(function (i) { return i.area === 'patent'; });
+  }
+  function patentSkill() {
+    return (state.model.skills || []).filter(function (s) { return /특허/.test(s.name); })[0] || null;
+  }
+  function patentStepFiles(step) {
+    var prefix = PATENT_AREA + '/' + step.folder + '/';
+    return patentItems().filter(function (i) { return i.kind !== 'folder' && i.path.indexOf(prefix) === 0; });
+  }
+  function patentNextStep() {
+    for (var i = 0; i < PATENT_STEPS.length; i++) {
+      if (!patentStepFiles(PATENT_STEPS[i]).length) return PATENT_STEPS[i];
+    }
+    return null;
+  }
+  function patentIdeaCount() { return patentStepFiles(PATENT_STEPS[0]).length; }
+
+  function patentStepCard(step, next) {
+    var files = patentStepFiles(step);
+    return '<article class="step' + (next ? ' step--next' : '') + '" data-patent-step="' + esc(step.key) + '">' +
+      '<div class="step__top"><span class="step__no">' + esc(step.label) + '</span>' +
+      (files.length ? '<span class="status status--complete">자료 ' + files.length + '건</span>' : '<span class="status status--pending">대기</span>') +
+      (next ? '<span class="tag">다음</span>' : '') + '</div>' +
+      '<h3 class="step__title">' + esc(step.title) + '</h3>' +
+      '<p class="step__desc">' + esc(step.desc) + '</p>' +
+      '<p class="step__foot"><code>' + esc(PATENT_AREA + '/' + step.folder) + '</code></p>' +
+      '</article>';
+  }
+
+  function patentSkillCard() {
+    var s = patentSkill();
+    var head = '<div class="card__head"><div><h2>연결된 스킬</h2><p>01_업무자동화목록/스킬 · 스킬: 특허등록</p></div>';
+    if (!s) {
+      return '<section class="card" data-patent-skill data-patent-skill-status="missing">' + head + '</div>' +
+        emptyInline('‘스킬: 특허등록’ 문서를 찾지 못했습니다', '01_업무자동화목록/스킬 폴더에 스킬 문서를 만들면 여기에 연결됩니다.') + '</section>';
+    }
+    return '<section class="card" data-patent-skill data-patent-skill-status="ok">' + head + chip(s.status) + '</div>' +
+      '<div class="skill__top"><span class="skill__name"><span class="skill__no">' + s.no + '</span>' + esc(s.name) + '</span></div>' +
+      '<dl class="skill__meta">' +
+      '<dt>실행 조건</dt><dd>' + esc(s.trigger) + '</dd>' +
+      '<dt>결과물</dt><dd>' + esc(s.output) + '</dd>' +
+      '<dt>마지막 실행</dt><dd>' + esc(s.lastRun) + '</dd>' +
+      '</dl>' +
+      '<div class="skill__next"><b>다음</b> · ' + esc(s.next) + '</div>' +
+      (s.docUrl ? '<div class="row row--gap" style="margin-top:12px"><a class="btn btn--ghost btn--sm" href="' + esc(s.docUrl) + '" target="_blank" rel="noopener">스킬 문서 열기</a></div>' : '') +
+      '</section>';
+  }
+
+  /* 빈 상태 — 아이디어가 없을 때는 틀을 유지한 채 첫 아이디어를 기다립니다. */
+  function patentIdeaCard() {
+    var files = patentStepFiles(PATENT_STEPS[0]);
+    if (files.length) {
+      return '<section class="card" data-patent-ideas>' +
+        '<div class="card__head"><div><h2>등록된 아이디어</h2><p>' + esc(PATENT_AREA + '/01_아이디어') + ' · ' + files.length + '건</p></div></div>' +
+        '<div class="stack">' + files.map(function (i) { return itemRow(i); }).join('') + '</div></section>';
+    }
+    return '<section class="card" data-patent-ideas data-patent-ideas-empty="1">' +
+      '<div class="card__head"><div><h2>등록된 아이디어</h2><p>아직 없습니다 · 첫 아이디어를 기다리는 중</p></div></div>' +
+      '<div class="empty"><span class="empty__icon">💡</span><h3>아이디어 하나면 시작됩니다</h3>' +
+      '<p>떠올린 아이디어를 한 줄로 주시면 <code>' + esc(PATENT_AREA + '/01_아이디어') + '</code>에 노트를 만들고 1단계(본업 무관성 확인)부터 함께 봅니다. 아이디어가 정해질 때까지 이 화면은 틀로 남겨 둡니다.</p>' +
+      '<p class="small muted">“특허등록”이라고 하시면 이 4단계 순서로 진행합니다.</p></div></section>';
+  }
+
+  function patentRulesCard() {
+    return '<section class="card"><div class="card__head"><div><h2>진행 규칙</h2><p>스킬: 특허등록에서 가져온 기준</p></div>' + chip('progress') + '</div>' +
+      '<ul class="rulelist">' +
+      '<li>1단계에서 본업 무관성을 먼저 확인합니다 — 본업과 관련된 아이디어는 회사 직무발명 절차가 우선입니다.</li>' +
+      '<li>출원 전에는 아이디어를 블로그·SNS에 공개하지 않습니다 — 먼저 공개하면 신규성을 잃을 수 있습니다.</li>' +
+      '<li>선행기술 조사는 KIPRIS에서 찾은 공개번호·공개일·링크를 함께 남깁니다.</li>' +
+      '<li>명세서·청구항은 AI가 만든 초안입니다 — 출원 전에 특허청 안내나 변리사로 확인합니다.</li>' +
+      '<li>출원은 본인 계정으로 직접 합니다(개인 직접 전자출원, 특허로).</li>' +
+      '</ul></section>';
+  }
+
+  function viewPatent() {
+    var items = patentItems();
+    var docs = items.filter(function (i) { return i.kind !== 'folder'; });
+    var next = patentNextStep();
+    var meta = '<span>아이디어 ' + patentIdeaCount() + '건 · 모은 자료 ' + docs.length + '건</span>' +
+      '<span>' + (next ? '다음 · ' + esc(next.label) + ' ' + esc(next.title) : '4단계 모두 자료 있음') + '</span>';
+
+    var out = pageHead('07_특허등록', '특허 아이디어와 출원 준비',
+      '아이디어 하나를 정하면 <b>① 본업 무관성 확인 → ② KIPRIS 선행기술 조사 → ③ 명세서·청구항 초안 → ④ 특허로 출원 준비</b> 순서로 진행합니다. 개인 직접 전자출원(특허로) 기준입니다.',
+      meta);
+
+    out += areaTaskCard('patent');
+
+    out += '<section class="card" data-patent-pipeline><div class="card__head"><div><h2>특허 출원 4단계</h2><p>단계별 자료는 ' + esc(PATENT_AREA) + ' 아래 폴더에 모입니다</p></div>' +
+      (next ? '<span class="tag">다음 · ' + esc(next.label) + '</span>' : '<span class="tag">자료 있음</span>') + '</div>' +
+      '<div class="steps">' + PATENT_STEPS.map(function (s) { return patentStepCard(s, !!next && next.key === s.key); }).join('') + '</div></section>';
+
+    out += patentSkillCard();
+    out += patentIdeaCard();
+    out += patentRulesCard();
+
+    /* 단계 폴더 밖에 둔 자료(07_특허등록 바로 아래 등)는 따로 모아 보여 줍니다. */
+    var loose = docs.filter(function (i) {
+      var p = i.path;
+      return !PATENT_STEPS.some(function (s) { return p.indexOf(PATENT_AREA + '/' + s.folder + '/') === 0; });
+    });
+    if (loose.length) {
+      out += '<section class="card" data-patent-loose><div class="card__head"><div><h2>단계 밖 자료</h2><p>' + esc(PATENT_AREA) + ' 폴더 바로 아래 두신 문서</p></div>' +
+        '<span class="tag">' + loose.length + '건</span></div>' +
+        '<div class="stack">' + loose.map(function (i) { return itemRow(i); }).join('') + '</div></section>';
+    }
     return '<div class="view">' + out + '</div>';
   }
 
