@@ -1027,7 +1027,7 @@
   }
 
   function patentRulesCard() {
-    return '<section class="card"><div class="card__head"><div><h2>진행 규칙</h2><p>스킬: 특허등록에서 가져온 기준</p></div>' + chip('progress') + '</div>' +
+    return '<section class="card"><div class="card__head"><div><h2>진행 규칙</h2><p>스킬: 특허등록에서 가져온 기준</p></div></div>' +
       '<ul class="rulelist">' +
       '<li>1단계에서 본업 무관성을 먼저 확인합니다 — 본업과 관련된 아이디어는 회사 직무발명 절차가 우선입니다.</li>' +
       '<li>출원 전에는 아이디어를 블로그·SNS에 공개하지 않습니다 — 먼저 공개하면 신규성을 잃을 수 있습니다.</li>' +
@@ -1042,7 +1042,7 @@
     var docs = items.filter(function (i) { return i.kind !== 'folder'; });
     var next = patentNextStep();
     var meta = '<span>아이디어 ' + patentIdeaCount() + '건 · 모은 자료 ' + docs.length + '건</span>' +
-      '<span>' + (next ? '다음 · ' + esc(next.label) + ' ' + esc(next.title) : '4단계 모두 자료 있음') + '</span>';
+      '<span>' + (next ? '다음 · ' + esc(next.label) : '4단계 모두 자료 있음') + '</span>';
 
     var out = pageHead('07_특허등록', '특허 아이디어와 출원 준비',
       '아이디어 하나를 정하면 <b>① 본업 무관성 확인 → ② KIPRIS 선행기술 조사 → ③ 명세서·청구항 초안 → ④ 특허로 출원 준비</b> 순서로 진행합니다. 개인 직접 전자출원(특허로) 기준입니다.',
