@@ -158,19 +158,22 @@
   }
   /* ---------- 영역(탭)별 태스크 ----------
      태스크의 '분류' 문자열을 탭 영역 키로 맞춥니다. 목록 문서의 분류는
-     네이버블로그 / 리서치 / 애플리케이션 / 일상생활 네 가지이지만, 표기가 조금 달라도 받습니다. */
+     네이버블로그 / 리서치 / 애플리케이션 / 일상생활 / 특허등록 / 음악 / 책 일곱 가지이고,
+     표기가 조금 달라도 받습니다. 음악·책은 아직 전용 탭 없이 업무자동화 표와 대시보드 분류 요약에만 보입니다. */
   var AREA_CAT = {
     blog: { label: '네이버블로그', test: /네이버블로그|블로그/ },
     research: { label: '리서치', test: /리서치/ },
     app: { label: '애플리케이션', test: /애플리케이션|앱|어플/ },
     daily: { label: '일상생활', test: /일상생활|일상|습관|건강/ },
-    patent: { label: '특허등록', test: /특허|지식재산|아이피|IP/ }
+    patent: { label: '특허등록', test: /특허|지식재산|아이피|IP/ },
+    music: { label: '음악', test: /음악|작곡|음원|사운드/ },
+    book: { label: '책', test: /책|도서|집필|출판/ }
   };
   function normCategory(s) { return String(s || '').replace(/[\s·・]/g, '').toLowerCase(); }
   function taskAreaKey(t) {
     var c = normCategory(t && t.category);
     if (!c) return '';
-    var keys = ['blog', 'research', 'app', 'daily', 'patent'];
+    var keys = ['blog', 'research', 'app', 'daily', 'patent', 'music', 'book'];
     for (var i = 0; i < keys.length; i++) {
       if (AREA_CAT[keys[i]].test.test(c)) return keys[i];
     }
@@ -271,7 +274,7 @@
     } else if (!live) {
       notice.hidden = false;
       notice.className = 'notice';
-      notice.innerHTML = '<span class="notice__text">프리뷰 모드입니다 — 2026-11-26 기준 Pickle_Base의 태스크 7건·스킬 5종·블로그 원고 2편·건강습관 실적 2일·4대 AI 리서치 2회차(제조 AX)·특허등록 틀을 담은 오프라인 스냅샷이에요. 실제 드라이브를 읽으려면 <strong>Google 계정 연결</strong>이 필요합니다.</span>';
+      notice.innerHTML = '<span class="notice__text">프리뷰 모드입니다 — 2026-11-27 기준 Pickle_Base의 태스크 9건·스킬 5종·블로그 원고 2편·건강습관 실적 2일·4대 AI 리서치 2회차(제조 AX)·특허등록 틀로 담은 오프라인 스냅샷이에요. 실제 드라이브를 읽으려면 <strong>Google 계정 연결</strong>이 필요합니다.</span>';
       var b = document.createElement('button');
       b.className = 'btn btn--sm';
       b.style.marginLeft = '8px';
