@@ -962,6 +962,51 @@
       desc: '특허청 전자출원(특허로)에 필요한 서류·수수료·일정을 확인하고 출원서 초안을 준비합니다. 출원은 본인 계정으로 직접 합니다.'
     }
   ];
+  /* 아이디어 3구분 — 구분마다 실제로 낼 수 있는 권리가 다릅니다. */
+  var PATENT_KINDS = [
+    {
+      key: 'software', label: '소프트웨어', right: '특허',
+      title: '프로그램 · 알고리즘 · 처리 방법',
+      desc: '절차와 동작으로 표현되는 아이디어는 발명의 ‘방법’으로 특허 출원합니다.',
+      eg: '예 — 업무 자동화 프로그램, 판정 알고리즘, 처리 순서'
+    },
+    {
+      key: 'hardware', label: '하드웨어', right: '특허 또는 실용신안',
+      title: '장치 · 부품 · 형상과 구조',
+      desc: '형체가 있는 아이디어는 새 원리·구성이면 특허, 물품의 형상·구조 개선이면 실용신안으로 출원합니다.',
+      eg: '예 — 장치·부품·공구, 설치 구조, 조립 방식'
+    },
+    {
+      key: 'design', label: '디자인', right: '디자인권(디자인보호법)',
+      title: '물품의 형상 · 모양 · 색채',
+      desc: '보이는 모습 자체를 지키는 권리로, 디자인보호법에 따라 디자인권으로 등록합니다.',
+      eg: '예 — 제품 외형, 화면 디자인, 포장 디자인'
+    }
+  ];
+  function patentKindCard(k) {
+    return '<article class="step" data-patent-kind="' + esc(k.key) + '">' +
+      '<div class="step__top"><span class="step__no">' + esc(k.label) + '</span>' +
+      '<span class="tag">권리 · ' + esc(k.right) + '</span></div>' +
+      '<h3 class="step__title">' + esc(k.title) + '</h3>' +
+      '<p class="step__desc">' + esc(k.desc) + '</p>' +
+      '<p class="step__foot">' + esc(k.eg) + '</p></article>';
+  }
+  function patentKindsCard() {
+    return '<section class="card" data-patent-kinds>' +
+      '<div class="card__head"><div><h2>아이디어 3구분</h2><p>소프트웨어 · 하드웨어 · 디자인 — 구분마다 낼 수 있는 권리가 다릅니다</p></div></div>' +
+      '<div class="kinds">' + PATENT_KINDS.map(patentKindCard).join('') + '</div>' +
+      '<p class="small muted" style="margin-top:12px">아이디어를 받으면 이 셋 중 어디에 속하는지 먼저 정하고, 그 구분에 맞는 권리로 1단계를 시작합니다.</p></section>';
+  }
+  function patentRightsCard() {
+    return '<section class="card" data-patent-rights>' +
+      '<div class="card__head"><div><h2>특허 · 실용신안 · 디자인권</h2><p>어느 권리로 낼지 고를 때 보는 기준</p></div></div>' +
+      '<dl class="kv">' +
+      '<dt>특허</dt><dd>발명(물건·방법·제조방법·용도) 대상 · 보호기간 20년</dd>' +
+      '<dt>실용신안</dt><dd>‘작은 특허’ — 물품의 형상·구조·조합만 대상(방법·소프트웨어는 불가) · 보호기간 10년</dd>' +
+      '<dt>실용신안 출원료</dt><dd>전자출원 20,000원 · 개인 감면(70%) 시 6,000원</dd>' +
+      '<dt>디자인권</dt><dd>디자인보호법 — 물품의 형상·모양·색채 등 디자인을 보호</dd>' +
+      '</dl></section>';
+  }
   function patentItems() {
     return (state.model.items || []).filter(function (i) { return i.area === 'patent'; });
   }
@@ -1032,6 +1077,7 @@
       '<li>1단계에서 본업 무관성을 먼저 확인합니다 — 본업과 관련된 아이디어는 회사 직무발명 절차가 우선입니다.</li>' +
       '<li>출원 전에는 아이디어를 블로그·SNS에 공개하지 않습니다 — 먼저 공개하면 신규성을 잃을 수 있습니다.</li>' +
       '<li>선행기술 조사는 KIPRIS에서 찾은 공개번호·공개일·링크를 함께 남깁니다.</li>' +
+      '<li>아이디어 구분(소프트웨어·하드웨어·디자인)에 따라 특허·실용신안·디자인권으로 나눠 출원합니다.</li>' +
       '<li>명세서·청구항은 AI가 만든 초안입니다 — 출원 전에 특허청 안내나 변리사로 확인합니다.</li>' +
       '<li>출원은 본인 계정으로 직접 합니다(개인 직접 전자출원, 특허로).</li>' +
       '</ul></section>';
@@ -1045,7 +1091,7 @@
       '<span>' + (next ? '다음 · ' + esc(next.label) : '4단계 모두 자료 있음') + '</span>';
 
     var out = pageHead('07_특허등록', '특허 아이디어와 출원 준비',
-      '아이디어 하나를 정하면 <b>① 본업 무관성 확인 → ② KIPRIS 선행기술 조사 → ③ 명세서·청구항 초안 → ④ 특허로 출원 준비</b> 순서로 진행합니다. 개인 직접 전자출원(특허로) 기준입니다.',
+      '아이디어 하나를 정하면 <b>① 본업 무관성 확인 → ② KIPRIS 선행기술 조사 → ③ 명세서·청구항 초안 → ④ 특허로 출원 준비</b> 순서로 진행합니다. 아이디어는 <b>소프트웨어·하드웨어·디자인</b> 셋으로 나눠 정리하고, 구분에 맞는 권리(특허·실용신안·디자인권)로 출원합니다. 개인 직접 전자출원(특허로) 기준입니다.',
       meta);
 
     out += areaTaskCard('patent');
@@ -1054,6 +1100,8 @@
       (next ? '<span class="tag">다음 · ' + esc(next.label) + '</span>' : '<span class="tag">자료 있음</span>') + '</div>' +
       '<div class="steps">' + PATENT_STEPS.map(function (s) { return patentStepCard(s, !!next && next.key === s.key); }).join('') + '</div></section>';
 
+    out += patentKindsCard();
+    out += patentRightsCard();
     out += patentSkillCard();
     out += patentIdeaCard();
     out += patentRulesCard();
